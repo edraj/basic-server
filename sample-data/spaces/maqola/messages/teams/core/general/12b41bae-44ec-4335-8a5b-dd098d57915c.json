@@ -1,0 +1,10 @@
+{
+
+	"uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
+	"timestamp":"2019-12-06T03:46:07.519451000Z",
+	"parent_uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
+	"body":"Hello world",
+  "from":"12b41bae-44ec-4335-8a5b-dd098d57915c",
+	"to": ["12b41bae-44ec-4335-8a5b-dd098d57915c"],
+	"thread_id": "12b41bae-44ec-4335-8a5b-dd098d57915c"
+}

@@ -1,0 +1,46 @@
+name: edraj
+version: 0.1.0
+
+authors:
+  - Kefah Issa <kefah.issa@gmail.com>
+
+targets:
+  edraj:
+    main: src/edraj.cr
+
+dependencies:
+  spec-kemal:
+    github: kemalcr/spec-kemal
+    branch: master
+  kemal:
+    github: kemalcr/kemal
+    branch: master
+  sqlite3:
+    github: crystal-lang/crystal-sqlite3
+    branch: master
+  mysql:
+    github: crystal-lang/crystal-mysql
+    branch: master
+  granite:
+    github: amberframework/granite
+    branch: master
+  crest:
+    github: mamantoha/crest
+    branch: master
+  ameba:
+    github: crystal-ameba/ameba
+    branch: master
+  json_schema:
+    github: kefahi/json_schema.cr
+    branch: master
+  graphql-crystal:
+    github: ziprandom/graphql-crystal
+    branch: master
+  jwt:
+    github: crystal-community/jwt
+    branch: master
+
+
+crystal: 0.31.1
+
+license: AGPLv3+

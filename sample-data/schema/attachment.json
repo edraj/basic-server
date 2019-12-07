@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://iyi.cz/schema/core/attachment.json",
+    "title": "Attachment",
+    "description": "Media/Blob attachement",
+    "type":"object",
+    "properties": {
+        "created_at": {"type":"string", "format": "date-time"},
+        "entry_file_name": {"type": "string"},
+        "guid": {"type": "string"},
+        "byte_size":{"type": "integer"},
+        "checksum":{"type":"string"},
+        "encoding":{"type":"string"},
+        "media_type":{"type":"string"},
+        "url": {"type":"string"},
+        "embedded": {
+            "type": "string",
+            "contentEncoding": "base64"
+          }
+    },
+    "additionalProperties": false
+}
+
+
+

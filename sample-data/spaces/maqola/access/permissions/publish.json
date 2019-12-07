@@ -1,0 +1,7 @@
+{
+	"shortname":"publish",
+	"uuid":"c7dc6c6d-b5ef-451e-a430-c45bfe318e1c",
+	"actions": ["create","update"],
+	"types": ["post"],
+	"paths": []
+}

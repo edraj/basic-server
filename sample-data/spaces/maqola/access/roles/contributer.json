@@ -1,0 +1,10 @@
+{
+	"uuid":"aeda8ca0-89f9-40dc-bbde-02d5bf3b7dc2",
+	"shortname":"contributer",
+	"permissions": [
+		{
+			"uuid":"c7dc6c6d-b5ef-451e-a430-c45bfe318e1c",
+			"shortname":"publish"
+		}
+	]
+}

@@ -1,0 +1,124 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://schema.iyi.cz/core/person.json",
+	"title": "Person",
+	"description": "Person details",
+	"type": "object",
+	"properties": {
+		"uuid": {
+			"type": "string"
+		},
+		"short_name": {
+			"type": "string"
+		},
+		"pretty_name": {
+			"type": "string"
+		},
+		"identities": {
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/identity"
+			}
+		},
+		"dob": {
+			"type": "string"
+		},
+		"about": {
+			"type": "string"
+		},
+		"anniversaries": {
+			"$def": "#/definitions/anniversary"
+		},
+		"contactdetails": {
+			"type": "array",
+			"items": {
+				"$def": "#/definitions/contact"
+			}
+		},
+		"addresses": {
+			"type": "array",
+			"items": {
+				"$def": "#/definitions/address"
+			}
+		}
+	},
+	"definitions": {
+		"anniversary": {
+			"type": "object",
+			"properties": {
+				"date": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				}
+			}
+		},
+		"identity": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"enum": [
+						"main",
+						"sub",
+						"device",
+						"application"
+					]
+				},
+				"uri": {
+					"type": "string"
+				},
+				"publickey": {
+					"type": "string"
+				}
+			}
+		},
+		"organization": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"joindate": {
+					"type": "string"
+				},
+				"leavedate": {
+					"type": "string"
+				},
+				"position": {
+					"type": "string"
+				},
+				"about": {
+					"type": "string"
+				}
+			}
+		},
+		"contact": {
+			"type": "object",
+			"properties": {
+				"type": {
+					"type": "string",
+					"enum": [
+						"email",
+						"mobile",
+						"landphone",
+						"socialmedia"
+					]
+				},
+				"medianame": {
+					"type": "string"
+				},
+				"handler": {
+					"type": "string"
+				}
+			}
+		},
+		"biography": {},
+		"address": {}
+	},
+	"additionalProperties": false
+}

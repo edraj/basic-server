@@ -1,0 +1,9 @@
+{
+	"uuid": "6e4aceee-19d1-45d2-bba2-b184bf05df1e",
+	"shortname": "core",
+	"members": [
+		{ "shortname":"kefah", "uuid":"ec37cec5-c96b-4433-bd27-f948eaad61d6"},
+		{ "shortname":"mo", "uuid":"2be6ea16-3b9c-480b-aecd-73e6c5980b93"}
+	]
+}
+

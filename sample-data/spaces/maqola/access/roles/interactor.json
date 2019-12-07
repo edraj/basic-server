@@ -1,0 +1,10 @@
+{
+	"uuid":"94007611-f8c3-4f9b-ae0a-a3143bda5104",
+	"shortname":"interactor",
+	"permissions": [
+		{
+			"uuid":"520c03c6-abef-4519-985e-5f1029a6f3a9",
+			"shortname":"interact"
+		}
+	]
+}

@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://iyi.cz/schema/core/message.json",
+    "title": "Message",
+    "description": "Message (Email/IM ...etc)",
+    "type":"object",
+    "properties": {
+        "title": {"type": "string"},
+        "sub_title": {"type": "string"},
+        "body": {"type": "string", "contentMediaType": "text/markdown"},
+        "thread_id": {"type":"string"},
+        "sender": {"type":"string"},
+        "receipients": {"type":"array", "items": {"type":"string"}},
+        "reply_to_message_id": {"type":"string"},
+        "subpath": {"type":"string"},
+        "tags": {"type": "array"}
+    },
+    "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://iyi.cz/schema/core/post.json",
+    "title": "Post",
+    "description": "Blog Post",
+    "type":"object",
+    "properties": {
+        "title": {"type": "string"},
+        "sub_title": {"type": "string"},
+        "body": {"type": "string", "contentMediaType": "text/markdown"},
+        "tags": {"type": "array"}
+    },
+    "additionalProperties": false
+}

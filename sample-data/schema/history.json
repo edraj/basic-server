@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://iyi.cz/schema/core/history.json",
+    "title": "History",
+    "description": "Records a previous state",
+    "type":"object",
+    "properties": {
+        "created_at": {"type": "string", "format":"date-time"},
+        "old_item": {"type": "string", "contentEncoding": "base64"}
+    },
+    "additionalProperties": false
+}

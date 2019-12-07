@@ -1,0 +1,6 @@
+{
+	"shortname":"interact",
+	"uuid":"520c03c6-abef-4519-985e-5f1029a6f3a9",
+	"actions": ["view","comment","react","share","suggest"],
+	"types": ["comment", "message"]
+}

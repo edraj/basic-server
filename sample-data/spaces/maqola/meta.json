@@ -1,0 +1,13 @@
+{
+	"uuid":"7f3753a3-782d-47cb-819d-f4c15664fb91",
+	"timestamp":"2019-11-28T13:26:37.935881000Z",
+	"location":"local:./content.json",
+	"subpath":"maqola",
+	"shortname":"maqola",
+	"schema_id": "space",
+	"encoding":"utf8",
+	"media_type":"application/json",
+	"checksum":"sha256:",
+	"contributer":"ec37cec5-c96b-4433-bd27-f948eaad61d6",
+	"byte_size": 0
+}

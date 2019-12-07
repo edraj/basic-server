@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://schema.iyi.cz/core/envelope.json",
+    "title": "Envelope",
+    "description": "Content (Entity) envelope",
+    "type":"object",
+    "properties": {
+        "created_at": {"type":"string", "format": "date-time"},
+        "file_name": {"type": "string"},
+        "guid": {"type": "string"},
+        "byte_size":{"type": "integer"},
+        "checksum":{"type":"string"},        
+        "signature": {"type": "string"},
+        "permissions": {"type": "object"},
+        "attachments": {"type": "array", "items":{"$ref":"attachment"}},
+        "nonce": {"type": "string"},
+        "tags":     {"type": "array", "items":{"type":"string"}},
+        "meta_attributes": {"type": "object"}
+    },
+    "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+{
+	"type":"query",
+	"actor":"d4be1b1c-8521-4fc3-8772-68e1adcb4cdc",
+	"resource":"f958057a-96eb-49c6-8a4b-eba6dd5c5fbb",
+	"token":"4f905845-75cc-41f2-b0b9-cb01361d5ef3",
+	"scope":"subtree",
+	"query":{
+		"parent_path":"spaces/maqola/messages",
+		"sub_path":"teams/core/general",
+		"uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c"
+	},
+	"data": []
+}

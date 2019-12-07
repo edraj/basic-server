@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://iyi.cz/schema/core/term.json",
+    "title": "Term",
+    "description": "Term definition (multi-lingual)",
+    "type":"object",
+    "properties": {
+        "definitions": {
+            "type":"array",
+            "items": {"$ref":"#/definitions/word"}
+        }
+    },
+    "additionalProperties": false,
+    "definitions": {
+        "word": {
+            "type":"object",
+            "properties": {
+                "word":     {"type": "string"},
+                "meaning":  {"type": "string"},
+                "language": {"type": "string"},
+                "synonyms": {"type": "array", "items":{"type":"string"}},
+                "antoyms":  {"type": "array", "items":{"type":"string"}},
+                "tags":     {"type": "array", "items":{"type":"string"}}
+            }
+        }
+    }
+}

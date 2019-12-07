@@ -1,0 +1,33 @@
+[
+	{
+		"role": {
+			"shortname": "admin",
+			"uuid": "f2cd08bf-9e86-446a-9284-aeb300b6fbb4"
+		},
+		"assignees": [{
+			"type":"group",
+			"shortname": "core",
+			"uuid":"6e4aceee-19d1-45d2-bba2-b184bf05df1e"
+		}]
+	},
+	{
+		"role": {
+			"shortname": "contributer",
+			"uuid": "aeda8ca0-89f9-40dc-bbde-02d5bf3b7dc2"
+		},
+		"assignees": [{
+			"type":"actor",
+			"shortname": "ali",
+			"uuid":"26c1d665-922d-4d64-862a-3967b8da3ece"
+		}],
+		"params": [
+			{
+				"path":"/modernage/poetry"
+			},
+			{
+				"type": []
+			}
+		]
+	}
+
+]

@@ -1,0 +1,6 @@
+{
+	"shortname":"manage",
+	"uuid":"c0ee4d20-0eb7-4e1d-8157-79d19bf23dde",
+	"actions": ["create", "delete", "update","read"],
+	"types": ["member", "group", "entitlement"]
+}

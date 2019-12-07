@@ -1,0 +1,6 @@
+---
+data_path: ./sample-data/
+run_path: /tmp/edraj/
+port: 4000
+host: 0.0.0.0
+jwt_secret: Abc123

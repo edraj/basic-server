@@ -1,0 +1,175 @@
+schema {
+  query: QueryType
+  mutation: MutationType
+}
+
+type QueryType {
+  contributer(id: ID!): Contributer
+  content(filter: Filter): [Content!]!
+}
+
+type MutationType {
+  content(payload: ContentInput!): Content
+  interact(payload: InteractionInput!): Interaction
+}
+
+# Query filter object
+input Filter {
+  # Free text search
+  search: String
+  # Retreive content by id
+  id: String
+  # Search by tags (and)
+  # tags: [String!]!
+  # Search by parent subpath
+  subpath: String
+  # Search from-date
+  from: String
+  # Search to-date
+  to: String
+  # sort
+  sort: String
+  # Offset
+  offset: Int
+  # Limit
+  limit: Int
+}
+
+
+type Contributer {
+  id: ID!
+  shortname: String!
+  prettyname: String
+}
+
+type Signature {
+  data: String!
+  # The fingerprint of the public key that can be used to verify
+  keyid: String!
+}
+
+enum InteractionType {
+  Comment
+  Reaction
+  View
+  Share
+}
+
+enum ReactionType {
+  Like
+  Love
+  Disklik
+  Laugh
+  Angry
+  Sad
+}
+
+type Interaction {
+  id: ID!
+  created: String!
+  type: InteractionType
+
+  # Commnet Id or Null if top-most
+  replyto: String
+  body: String
+
+  # Reaction
+  reactiontype: ReactionType
+
+  # Trace to the new shared location
+  uri: String 
+
+  # Protected access
+  ipAddress: String
+  userAgent: String
+  sessionId: String
+}
+
+type Media {
+  id: ID!
+  created: String!
+  mediatype: String!
+  # return *relative* web access path /media/xxx
+  uri: String!
+  subpath: String!
+  shortname: String!
+  prettyname: String
+  description: String
+  bytesize: Int!
+  # algo:value
+  checksum: String!
+  tags: [String]!
+}
+
+type Article {
+  title: String!
+  summary: String
+  body: String!
+  footnotes: [String!]!
+}
+
+type Post {
+  title: String!
+  summary: String
+  body: String!
+}
+
+type Quote {
+  title: String!
+  body: String!
+  biography: Contributer!
+}
+
+enum ContentType {
+  Post
+  Article
+  Book
+  Quote
+  Excerpt
+  Contract
+  Invoice
+  Receipt
+  Task
+  Term
+  Aya
+  Hadeeth
+}
+
+union Payload = Post | Quote | Article
+
+type Content {
+  id: ID!
+  # aka schema
+  type: ContentType!
+  created: String!
+  payload: Payload!
+  subpath: String!
+  shortname: String!
+  prettyname: String
+  description: String
+  tags: [String]!
+  attachments: [Media!]!
+  interactions: [Interaction]!
+  contributer: Contributer!
+}
+
+input ContentInput {
+  title: String!
+  body: String!
+  tags: [String!]
+}
+
+input InteractionInput {
+  contenid: ID!
+  type: InteractionType
+
+  # Commnet Id or Null if top-most
+  replyto: String
+  body: String
+
+  # Reaction
+  reactiontype: ReactionType
+
+  # Trace to the new shared location
+  uri: String
+}
