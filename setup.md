@@ -22,7 +22,7 @@ name = Crystal
 baseurl = https://dist.crystal-lang.org/rpm/
 END
 
-dnf install -y crystal redis
+dnf install -y crystal redis gmp-static
 ```
 
 ## Tests

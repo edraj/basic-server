@@ -26,7 +26,7 @@ module Edraj
 
 	enum ScopeType
 		Base
-		Oneleve
+		Onelevel
 		Subtree
 	end
 
@@ -138,6 +138,16 @@ module Edraj
 		# Read one
 		def self.load(parent_path, sub_path, uuid)
 			Message.from_json File.read Edraj.settings.data_path / parent_path / sub_path / "#{uuid}.json"
+		end
+
+		# List
+		def self.list(parent_path : String, sub_path : String)
+			path = Edraj.settings.data_path / parent_path / sub_path / "*.json"
+      list = [] of UUID
+			Dir.glob(path.to_s) do |one|
+				list << UUID.new File.basename(one, ".json")
+      end
+			list
 		end
   end
 

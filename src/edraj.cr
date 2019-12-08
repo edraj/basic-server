@@ -28,11 +28,11 @@ class Record
   include JSON::Serializable
   property type : ResourceType
   property uuid : UUID
-  property path : String
+  property parent_path : String
   property fields = Hash(String, String | Int64 | Float64 | Bool).new
   property relationships : Hash(String, Record)?
 
-  def initialize(@type, @uuid, @path)
+  def initialize(@type, @uuid, @parent_path)
   end
 end
 
@@ -43,19 +43,20 @@ end
 
 class Query
   include JSON::Serializable
+  property resources = Array(UUID).new
   property search = ""
   property from_date : Time?
   property to_date : Time?
   property parent_path : String
-	property sub_path = ""
-	property excluded_fields = Array(String).new
+  property sub_path = ""
+  property excluded_fields = Array(String).new
   property included_fields : Array(String)?
-	property sort = Array(String).new
+  property sort = Array(String).new
   property order = OrderType::Natural
   property limit = 10
   property offset = 0
   property suggested = false
-	property tags = Array(String).new
+  property tags = Array(String).new
 end
 
 enum RequestType
@@ -71,7 +72,6 @@ class Request
   include JSON::Serializable
   property type : RequestType
   property actor : UUID?
-  property resource : UUID?
   property token : String
   property scope : ScopeType
   property tracking_id : String?
@@ -104,7 +104,7 @@ class Result
   include JSON::Serializable
   property type : ResultType
   property errors : Array(Error)?
-  property count : Int64?
+  property count : Int64 = 0
 
   def initialize(@type)
   end
@@ -143,7 +143,7 @@ options "/**" do |env|
 end
 
 def process_request(request : Request) : Response
-	response = Response.new(Result.new ResultType::Success)
+  response = Response.new(Result.new ResultType::Success)
   case request.type
   when RequestType::Create
     request.data.each do |record|
@@ -159,20 +159,32 @@ def process_request(request : Request) : Response
     end
   when RequestType::Query
     actor = request.actor
-		query = request.query
+    query = request.query
     raise "Actor UUID is missing" if actor.nil?
-		raise "Query is missing" if query.nil?
-		parent_path = query.parent_path
-		sub_path = query.sub_path
-		uuid = request.resource
+    raise "Query is missing" if query.nil?
+    parent_path = query.parent_path
+    sub_path = query.sub_path
 
-		record = Record.new(ResourceType::Message, actor, parent_path)
-		message = Message.load("spaces/maqola/messages", "teams/core/general", "12b41bae-44ec-4335-8a5b-dd098d57915c")
-		record.fields["from"] = message.from.to_s
-		record.fields["to"] = message.to.join(",")
-		record.fields["body"] = message.body
-		record.fields["timestamp"] = message.timestamp.to_rfc3339
-		response.data << record
+    resources = [] of UUID
+
+    case request.scope
+    when ScopeType::Base
+			resources.concat query.resources if request.scope == ScopeType::Base
+		when ScopeType::Onelevel
+			resources.concat Message.list parent_path, sub_path
+    end
+
+    resources.each do |one|
+      record = Record.new(ResourceType::Message, actor, parent_path)
+      message = Message.load(parent_path, sub_path, one)
+      record.fields["from"] = message.from.to_s
+      record.fields["to"] = message.to.join(",")
+      record.fields["body"] = message.body
+      record.fields["timestamp"] = message.timestamp.to_rfc3339
+      record.fields["sub_path"] = sub_path
+      response.data << record
+			response.result.count += 1
+    end
   when RequestType::Delete
     request.data.each do |record|
       case record.type
@@ -191,7 +203,7 @@ def process_request(request : Request) : Response
     return response
   when RequestType::Logout
   end
-	response 
+  response
 end
 
 APPLICATION_JSON = "application/json"
@@ -203,7 +215,7 @@ post "/api/" do |ctx|
   halt ctx, status_code: 406, response: E406 if ctx.request.headers["Accept"]? != APPLICATION_JSON
   begin
     request = Request.from_json ctx.request.body.not_nil!
-		process_request(request).to_pretty_json2
+    process_request(request).to_pretty_json2
   rescue ex
     {result: {type: "Failed", title: "Bad request", detail: "#{ex.message}"}}.to_pretty_json2
   end
