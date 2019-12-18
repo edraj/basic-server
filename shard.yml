@@ -21,9 +21,9 @@ dependencies:
   mysql:
     github: crystal-lang/crystal-mysql
     branch: master
-  granite:
-    github: amberframework/granite
-    branch: master
+    #  granite:
+    #    github: amberframework/granite
+    #    branch: master
   crest:
     github: mamantoha/crest
     branch: master

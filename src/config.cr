@@ -54,7 +54,7 @@ module Edraj
       parser.on("-r RUN_PATH", "--run-path=RUN_PATH", "The intermediate / caching runtime files path. (default: /tmp/edraj)") { |p| _run_path = p }
       parser.on("-d DATA_PATH", "--datapath=DATA_PATH", "Folder where all information is persisted. (default: ~/edraj)") { |p| _data_path = p }
       parser.on("-c FILE", "--config=FILE", "Specifies a yaml file to load for configuration (default: 'config.yml')") { |p| config_file = p }
-			parser.on("-h", "--help", "Show this help") { puts parser; exit 0 }
+      parser.on("-h", "--help", "Show this help") { puts parser; exit 0 }
     end
 
     if !File.exists?(config_file)

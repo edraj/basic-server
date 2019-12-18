@@ -73,7 +73,7 @@ module Sentry
       @run_args = ""
       @watch = [] of String
       @install_shards = false
-			@run_ameba = false
+      @run_ameba = false
       @colorize = true
     end
 
@@ -192,7 +192,7 @@ module Sentry
       files = [] of String,
       should_build = true,
       install_shards = false,
-			run_ameba = false,
+      run_ameba = false,
       colorize = true
     )
       @files = files
@@ -299,21 +299,20 @@ module Sentry
       end
     end
 
-
-		def run_ameba
+    def run_ameba
       stdout "🤖  Running ameba..."
-			ameba_result = Process.run("./bin/ameba", shell: true, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
+      ameba_result = Process.run("./bin/ameba", shell: true, output: Process::Redirect::Inherit, error: Process::Redirect::Inherit)
       if !ameba_result || !ameba_result.success?
         stdout "🤖  Error running ameba. SentryBot shutting down..."
-        #exit 1
+        # exit 1
       end
-		end
+    end
 
     def run
       stdout "🤖  Your SentryBot is vigilant. beep-boop..."
 
       run_install_shards if @should_install_shards
-			run_ameba if @should_run_ameba
+      run_ameba if @should_run_ameba
 
       loop do
         if @should_kill

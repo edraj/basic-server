@@ -5,6 +5,7 @@ require "uuid"
 require "uuid/json"
 require "jwt"
 require "colorize"
+require "./exts"
 require "./config"
 require "./models"
 
@@ -12,27 +13,16 @@ require "./models"
 
 include Edraj
 
-class Object
-  def to_pretty_json2
-    "#{to_pretty_json}\n"
-  end
-end
-
-struct Enum
-  def to_json(json : JSON::Builder)
-    json.string(to_s)
-  end
-end
-
 class Record
   include JSON::Serializable
   property type : ResourceType
   property uuid : UUID
-  property parent_path : String
-  property fields = Hash(String, String | Int64 | Float64 | Bool).new
+  property subpath : String
+  property properties = Hash(String, AnyBasic).new
   property relationships : Hash(String, Record)?
+  property op_id : String?
 
-  def initialize(@type, @uuid, @parent_path)
+  def initialize(@type, @uuid, @subpath)
   end
 end
 
@@ -47,8 +37,7 @@ class Query
   property search = ""
   property from_date : Time?
   property to_date : Time?
-  property parent_path : String
-  property sub_path = ""
+  property subpath : String
   property excluded_fields = Array(String).new
   property included_fields : Array(String)?
   property sort = Array(String).new
@@ -71,55 +60,54 @@ end
 class Request
   include JSON::Serializable
   property type : RequestType
-  property actor : UUID?
+  property space : String
+  property actor : UUID
   property token : String
   property scope : ScopeType
   property tracking_id : String?
   property query : Query?
-  property data : Array(Record)
+  property records : Array(Record)
 end
 
 enum ResultType
   Success
-  Processing
-  Failed
+  Inprogress # aka Processing
+  Failure
 end
 
-class ErrorSource
-  include JSON::Serializable
-  property pointer : String?
-  property parameter : String?
-end
+# class ErrorSource
+#  include JSON::Serializable
+#  property pointer : String?
+#  property parameter : String?
+# end
 
-class Error
-  include JSON::Serializable
-  property? id : String
-  property? code : String
-  property? title : String
-  property? detail : String
-  property? source : ErrorSource
-end
+# class Error
+#  include JSON::Serializable
+#  property? id : String
+#  property? code : String
+#  property? title : String
+#  property? detail : String
+#  property? source : ErrorSource
+# end
 
 class Result
   include JSON::Serializable
-  property type : ResultType
-  property errors : Array(Error)?
-  property count : Int64 = 0
+  property result_type : ResultType
+  property properties = Hash(String, AnyBasic).new
 
-  def initialize(@type)
+  def initialize(@result_type)
   end
 end
 
 class Response
   include JSON::Serializable
   property tracking_id : String?
-  property uuid : UUID?
-  property data = Array(Record).new
+  property records = Array(Record).new
   property included : Array(Record)?
   property suggested : Array(Record)?
-  property result : Result
+  property results = Array(Result).new
 
-  def initialize(@result)
+  def initialize
   end
 end
 
@@ -143,63 +131,78 @@ options "/**" do |env|
 end
 
 def process_request(request : Request) : Response
-  response = Response.new(Result.new ResultType::Success)
+  response = Response.new 
+  response.tracking_id = request.tracking_id if !request.tracking_id.nil?
   case request.type
   when RequestType::Create
-    request.data.each do |record|
-      case record.type
-      when ResourceType::Message
+    request.records.each do |record|
+      begin
+        raw = {
+          space:      request.space,
+          subpath:    record.subpath,
+          type:       record.type,
+          properties: record.properties,
+          uuid:       record.uuid,
+        }
+        entry = Entry.from_json(raw.to_json)
+        entry.save record.uuid.to_s
+        response.results << Result.new ResultType::Success
+      rescue ex      
+        result = Result.new ResultType::Failure
+        result.properties["Message"] = ex.to_s
+        response.results <<  result
       end
     end
   when RequestType::Update
-    request.data.each do |record|
-      case record.type
-      when ResourceType::Message
-      end
+    request.records.each do |record|
+      entry = Entry.from_json Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
+      entry.properties.merge record.properties
+      entry.save record.uuid.to_s
+    end
+  when RequestType::Delete
+    request.records.each do |record|
+      Entry.delete Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
+      response.results << Result.new ResultType::Success
+      
     end
   when RequestType::Query
     actor = request.actor
     query = request.query
     raise "Actor UUID is missing" if actor.nil?
     raise "Query is missing" if query.nil?
-    parent_path = query.parent_path
-    sub_path = query.sub_path
+    subpath = query.subpath
 
     resources = [] of UUID
 
     case request.scope
     when ScopeType::Base
-			resources.concat query.resources if request.scope == ScopeType::Base
-		when ScopeType::Onelevel
-			resources.concat Message.list parent_path, sub_path
+      resources.concat query.resources if request.scope == ScopeType::Base
+    when ScopeType::Onelevel
+      resources.concat Entry.list Edraj.settings.data_path / subpath
     end
 
+    count = 0
     resources.each do |one|
-      record = Record.new(ResourceType::Message, actor, parent_path)
-      message = Message.load(parent_path, sub_path, one)
-      record.fields["from"] = message.from.to_s
-      record.fields["to"] = message.to.join(",")
-      record.fields["body"] = message.body
-      record.fields["timestamp"] = message.timestamp.to_rfc3339
-      record.fields["sub_path"] = sub_path
-      response.data << record
-			response.result.count += 1
-    end
-  when RequestType::Delete
-    request.data.each do |record|
-      case record.type
-      when ResourceType::Message
-      end
+      record = Record.new(ResourceType::Message, actor, subpath)
+      entry = Entry.from_json Edraj.settings.data_path / request.space / subpath, one.to_s
+      record.properties["from"] = entry.properties["from"].to_s
+      record.properties["to"] = entry.properties["to"]
+      record.properties["body"] = entry.properties["body"]
+      record.properties["timestamp"] = entry.timestamp.to_rfc3339
+      record.properties["subpath"] = subpath
+      response.records << record
+      count += 1
     end
   when RequestType::Login
-    response = Response.new(Result.new ResultType::Success)
+    response = Response.new
     actor = request.actor
     raise "Actor UUID is missing" if actor.nil?
     data = {"actor" => actor.to_s, "iat" => Time.local.to_unix.to_s}
     token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
-    record = Record.new(ResourceType::Token, actor, "/actors/kefah")
-    record.fields["token"] = token.to_s
-    response.data << record
+    #record = Record.new(ResourceType::Token, actor, "/actors/kefah")
+    result = Result.new ResultType::Success
+    result.properties["token"] = token.to_s
+    response.results << result
     return response
   when RequestType::Logout
   end
@@ -221,11 +224,18 @@ post "/api/" do |ctx|
   end
 end
 
+get "/media" do |ctx|
+  # TODO check access
+  # TODO conent type
+  # TODO support chunked / range download: Kemal "send_file" supports that already we just need to translate the way.
+  send_file ctx, "/path/to/media/file"
+end
+
 post "/media" do |ctx|
   ctx.response.content_type = "application/json"
 end
 
-sockets = {} of UUID => Set(HTTP::WebSocket)
+# sockets = {} of UUID => Set(HTTP::WebSocket)
 
 ws "/websocket" do |socket|
   puts "Socket connected".colorize(:green)
