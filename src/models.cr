@@ -107,7 +107,7 @@ module Edraj
     def self.list(path, glob = "*")
       list = [] of UUID
       Dir.glob("#{path}/#{glob}") do |one|
-        list << UUID.random #FIXME 
+        list << UUID.new one # FIXME
       end
       list
     end
@@ -233,7 +233,7 @@ module Edraj
     property checksum : String
     property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
     property media_type : MediaType
-    property sub_type : String
+    property subtype : String
     property encoding : EncodingType
 
     def comments : Hash(UUID, Comment)

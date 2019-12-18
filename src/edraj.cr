@@ -92,10 +92,11 @@ end
 
 class Result
   include JSON::Serializable
-  property result_type : ResultType
+  property type : ResultType
+  property code : Int64 = 0
   property properties = Hash(String, AnyBasic).new
 
-  def initialize(@result_type)
+  def initialize(@type)
   end
 end
 
@@ -131,7 +132,7 @@ options "/**" do |env|
 end
 
 def process_request(request : Request) : Response
-  response = Response.new 
+  response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
   case request.type
   when RequestType::Create
@@ -147,10 +148,10 @@ def process_request(request : Request) : Response
         entry = Entry.from_json(raw.to_json)
         entry.save record.uuid.to_s
         response.results << Result.new ResultType::Success
-      rescue ex      
+      rescue ex
         result = Result.new ResultType::Failure
         result.properties["Message"] = ex.to_s
-        response.results <<  result
+        response.results << result
       end
     end
   when RequestType::Update
@@ -163,7 +164,6 @@ def process_request(request : Request) : Response
     request.records.each do |record|
       Entry.delete Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
       response.results << Result.new ResultType::Success
-      
     end
   when RequestType::Query
     actor = request.actor
@@ -199,7 +199,7 @@ def process_request(request : Request) : Response
     raise "Actor UUID is missing" if actor.nil?
     data = {"actor" => actor.to_s, "iat" => Time.local.to_unix.to_s}
     token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
-    #record = Record.new(ResourceType::Token, actor, "/actors/kefah")
+    # record = Record.new(ResourceType::Token, actor, "/actors/kefah")
     result = Result.new ResultType::Success
     result.properties["token"] = token.to_s
     response.results << result
