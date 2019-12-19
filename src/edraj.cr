@@ -8,110 +8,11 @@ require "colorize"
 require "./exts"
 require "./config"
 require "./models"
+require "file_utils"
 
 #  logger.debug "#{settings.host}:#{settings.port}".colorize.yellow
 
 include Edraj
-
-class Record
-  include JSON::Serializable
-  property type : ResourceType
-  property uuid : UUID
-  property subpath : String
-  property properties = Hash(String, AnyBasic).new
-  property relationships : Hash(String, Record)?
-  property op_id : String?
-
-  def initialize(@type, @uuid, @subpath)
-  end
-end
-
-enum OrderType
-  Natural
-  Random
-end
-
-class Query
-  include JSON::Serializable
-  property resources = Array(UUID).new
-  property search = ""
-  property from_date : Time?
-  property to_date : Time?
-  property subpath : String
-  property excluded_fields = Array(String).new
-  property included_fields : Array(String)?
-  property sort = Array(String).new
-  property order = OrderType::Natural
-  property limit = 10
-  property offset = 0
-  property suggested = false
-  property tags = Array(String).new
-end
-
-enum RequestType
-  Create
-  Update
-  Query
-  Delete
-  Login
-  Logout
-end
-
-class Request
-  include JSON::Serializable
-  property type : RequestType
-  property space : String
-  property actor : UUID
-  property token : String
-  property scope : ScopeType
-  property tracking_id : String?
-  property query : Query?
-  property records : Array(Record)
-end
-
-enum ResultType
-  Success
-  Inprogress # aka Processing
-  Failure
-end
-
-# class ErrorSource
-#  include JSON::Serializable
-#  property pointer : String?
-#  property parameter : String?
-# end
-
-# class Error
-#  include JSON::Serializable
-#  property? id : String
-#  property? code : String
-#  property? title : String
-#  property? detail : String
-#  property? source : ErrorSource
-# end
-
-class Result
-  include JSON::Serializable
-  property type : ResultType
-  property code : Int64 = 0
-  property properties = Hash(String, AnyBasic).new
-
-  def initialize(@type)
-  end
-end
-
-class Response
-  include JSON::Serializable
-  property tracking_id : String?
-  property records = Array(Record).new
-  property included : Array(Record)?
-  property suggested : Array(Record)?
-  property results = Array(Result).new
-
-  def initialize
-  end
-end
-
 static_headers do |response, filepath, filestat|
   if filepath =~ /\.html$/
     response.headers.add("Access-Control-Allow-Origin", "*")
@@ -138,32 +39,45 @@ def process_request(request : Request) : Response
   when RequestType::Create
     request.records.each do |record|
       begin
+        record.uuid = UUID.random if record.uuid.nil?
+				record.timestamp = Time.local if record.timestamp.nil?
+				filename = 
         raw = {
-          space:      request.space,
-          subpath:    record.subpath,
-          type:       record.type,
-          properties: record.properties,
-          uuid:       record.uuid,
+          space:       request.space,
+          subpath:     record.subpath,
+					timestamp:   record.timestamp,
+          type:        record.type,
+          properties:  record.properties,
+          uuid:        record.uuid,
+					filename: record.properties["filename"],
         }
+
         entry = Entry.from_json(raw.to_json)
-        entry.save record.uuid.to_s
-        response.results << Result.new ResultType::Success
+				entry.save "#{record.uuid.to_s}.json"
+        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}#{record.subpath}#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
-        result = Result.new ResultType::Failure
-        result.properties["Message"] = ex.to_s
-        response.results << result
+        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
       end
     end
   when RequestType::Update
     request.records.each do |record|
-      entry = Entry.from_json Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
-      entry.properties.merge record.properties
-      entry.save record.uuid.to_s
+      begin
+        entry = Entry.from_json Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
+        entry.properties.merge record.properties
+        entry.save record.uuid.to_s
+        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
+      rescue ex
+        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
+      end
     end
   when RequestType::Delete
     request.records.each do |record|
-      Entry.delete Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
-      response.results << Result.new ResultType::Success
+      begin
+        Entry.delete Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
+        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
+      rescue ex
+        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
+      end
     end
   when RequestType::Query
     actor = request.actor
@@ -210,43 +124,88 @@ def process_request(request : Request) : Response
 end
 
 APPLICATION_JSON = "application/json"
-E415             = {data: [] of Int32, result: {type: "Failed", title: "Unsupported"}}.to_pretty_json2
-E406             = {data: [] of Int32, result: {type: "Failed", title: "Unacceptable"}}.to_pretty_json2
 post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
-  halt ctx, status_code: 415, response: E415 if ctx.request.headers["Content-Type"]? != APPLICATION_JSON
-  halt ctx, status_code: 406, response: E406 if ctx.request.headers["Accept"]? != APPLICATION_JSON
   begin
+    raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
-    {result: {type: "Failed", title: "Bad request", detail: "#{ex.message}"}}.to_pretty_json2
+    {records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2
   end
 end
 
-get "/media" do |ctx|
+get "/media/:space/*subpathname" do |ctx|
   # TODO check access
   # TODO conent type
   # TODO support chunked / range download: Kemal "send_file" supports that already we just need to translate the way.
-  send_file ctx, "/path/to/media/file"
+  # TODO check authtoken which should contain a signed request for granting access passed as a url param.
+  # authz = ctx.params.url["authz"]
+	#pp ctx.params.url
+	path = Edraj.settings.data_path / "spaces" / ctx.params.url["space"] / ctx.params.url["subpathname"]
+	#puts "Serving #{path}"
+	send_file ctx, path.to_s
 end
 
-post "/media" do |ctx|
-  ctx.response.content_type = "application/json"
+post "/media/*subpath" do |ctx|
+  ctx.response.content_type = APPLICATION_JSON
+  # subpath = ctx.params.url["subpath"]
+  begin
+    raw_request : String
+    temp_file = File.tempfile(".edraj")
+    #raw_filename = ""
+    #raw_filesize = 0
+    request : Request | Nil = nil
+    HTTP::FormData.parse(ctx.request) do |part|
+      case part.name
+      when "request"
+        request = Request.from_json part.body.gets_to_end
+      when "file"
+        # raise "No file name" unless part.filename.is_a?(String)
+        temp_file = File.tempfile do |file|
+          IO.copy(part.body, file)
+        end
+        #raw_filename = part.filename if part.filename.is_a?(String)
+        #raw_filesize = part.size unless part.size.nil?
+      end
+    end
+		#pp raw_filename.path
+    #pp raw_filesize
+
+		raise "Bad request" if request.nil?
+		subpath = request.records[0].subpath
+		filename = request.records[0].properties["filename"]
+		
+		raise "First record is missing subpath" if subpath.nil?
+		raise "First record is missing filename" if filename.nil?
+		
+		path = Edraj.settings.data_path / "spaces" / request.space / subpath
+		Dir.mkdir_p path.to_s
+		puts "Copying file from #{temp_file.path} to #{path.to_s}"
+		FileUtils.cp temp_file.path, "#{path.to_s}#{filename}"
+    temp_file.delete
+
+    process_request(request).to_pretty_json2
+  rescue ex
+    pp ex
+    {records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2
+  end
 end
 
 # sockets = {} of UUID => Set(HTTP::WebSocket)
 
-ws "/websocket" do |socket|
+ws "/websocket" do |socket, context|
   puts "Socket connected".colorize(:green)
+  puts "Context #{context}".colorize(:yellow)
+
   ponged = true
 
   socket.on_message do |message|
     begin
       request = Request.from_json message.not_nil!
-      process_request request
+      socket.send process_request(request).to_pretty_json2
     rescue ex
-      {result: {type: "Failed", title: "Bad request", detail: "#{ex.message}"}}.to_pretty_json2
+      socket.send({records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2)
     end
   end
 

@@ -69,11 +69,11 @@ module Edraj
     end
   end
 
-  class Base
+  class MetaBase
     include JSON::Serializable
     property uuid : UUID
     property timestamp : Time
-    property signature : Signature
+    # property signature : Signature
     property author : UUID?
     property type : ResourceType
     property space : String
@@ -81,15 +81,15 @@ module Edraj
 
     # Save
     def save(filename : String)
-      path = Edraj.settings.data_path / @space / @subpath
+      path = Edraj.settings.data_path / "spaces" / @space / @subpath
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
       File.write path / filename, to_pretty_json
     end
   end
 
-  class Entry < Base
-    property shortname : String
-    property displayname : String
+  class Entry < MetaBase
+    property shortname : String?
+    property displayname : String?
     property description : String?
     property tags = Array(String).new
     property properties : Hash(String, AnyBasic)
@@ -147,14 +147,14 @@ module Edraj
     property body : String
   end
 
-  class Contributer < Base
+  class Contributer < MetaBase
     property about : String
   end
 
   class Task < Entry
   end
 
-  class Subscription < Base
+  class Subscription < MetaBase
     property filter : String
   end
 
@@ -167,12 +167,12 @@ module Edraj
     Sad
   end
 
-  class Reaction < Base
+  class Reaction < MetaBase
     property reaction_type : ReactionType
     property response_to_uuid : UUID
   end
 
-  class Reply < Base
+  class Reply < MetaBase
     property body : String
     property response_to_uuid : UUID?
 
@@ -204,6 +204,7 @@ module Edraj
   #  end
 
   enum EncodingType
+		None
     ASCII
     UTF8
     UTF16
@@ -232,6 +233,7 @@ module Edraj
     property bytesize : Int64
     property checksum : String
     property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
+		property filename : String
     property media_type : MediaType
     property subtype : String
     property encoding : EncodingType
@@ -242,6 +244,92 @@ module Edraj
 
     def reactions : Hash(UUID, Reaction)
       Hash(UUID, Reaction).new
+    end
+  end
+
+  class Record
+    include JSON::Serializable
+    property type : ResourceType
+    property uuid : UUID
+    property timestamp : Time?
+    property subpath : String
+    property properties = Hash(String, AnyBasic).new
+    property relationships : Hash(String, Record)?
+    property op_id : String?
+
+    def initialize(@type, @uuid, @subpath)
+    end
+  end
+
+  enum OrderType
+    Natural
+    Random
+  end
+
+  class Query
+    include JSON::Serializable
+    property resources = Array(UUID).new
+    property search = ""
+    property from_date : Time?
+    property to_date : Time?
+    property subpath : String
+    property excluded_fields = Array(String).new
+    property included_fields : Array(String)?
+    property sort = Array(String).new
+		property order = Edraj::OrderType::Natural
+    property limit = 10
+    property offset = 0
+    property suggested = false
+    property tags = Array(String).new
+  end
+
+  enum RequestType
+    Create
+    Update
+    Delete
+    Query
+    Login
+    Logout
+  end
+
+  class Request
+    include JSON::Serializable
+    property type : RequestType
+    property space : String
+    property actor : UUID
+    property token : String
+    property scope : ScopeType
+    property tracking_id : String?
+    property query : Query?
+    property records : Array(Record)
+  end
+
+  enum ResultType
+    Success
+    Inprogress # aka Processing
+    Failure
+  end
+
+  class Result
+    include JSON::Serializable
+    property status : ResultType
+    property code : Int64?
+    # property message : String?
+    property properties : Hash(String, AnyBasic)
+
+    def initialize(@status, @properties = Hash(String, AnyBasic).new)
+    end
+  end
+
+  class Response
+    include JSON::Serializable
+    property tracking_id : String?
+    property records = Array(Record).new
+    property included : Array(Record)?
+    property suggested : Array(Record)?
+    property results = Array(Result).new
+
+    def initialize
     end
   end
 end
