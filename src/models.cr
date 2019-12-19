@@ -87,12 +87,13 @@ module Edraj
     end
   end
 
+
   class Entry < MetaBase
     property shortname : String?
     property displayname : String?
     property description : String?
     property tags = Array(String).new
-    property properties : Hash(String, AnyBasic)
+    property properties : Hash(String, AnyComplex)
 
     def locator : Locator
       Locator.from_json({
@@ -106,8 +107,10 @@ module Edraj
     # List files
     def self.list(path, glob = "*")
       list = [] of UUID
-      Dir.glob("#{path}/#{glob}") do |one|
-        list << UUID.new one # FIXME
+			puts "Checking #{path}"
+			Dir.glob("#{path}/#{glob}.json") do |one|
+				puts "Found #{one}"
+				list << UUID.new File.basename one, ".json" 
       end
       list
     end
@@ -253,7 +256,7 @@ module Edraj
     property uuid : UUID
     property timestamp : Time?
     property subpath : String
-    property properties = Hash(String, AnyBasic).new
+    property properties = Hash(String, AnyComplex).new
     property relationships : Hash(String, Record)?
     property op_id : String?
 

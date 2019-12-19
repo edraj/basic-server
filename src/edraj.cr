@@ -35,13 +35,14 @@ end
 def process_request(request : Request) : Response
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
+	puts "Processing request"
   case request.type
   when RequestType::Create
     request.records.each do |record|
       begin
+				puts "Processing record ..." 
         record.uuid = UUID.random if record.uuid.nil?
 				record.timestamp = Time.local if record.timestamp.nil?
-				filename = 
         raw = {
           space:       request.space,
           subpath:     record.subpath,
@@ -49,13 +50,14 @@ def process_request(request : Request) : Response
           type:        record.type,
           properties:  record.properties,
           uuid:        record.uuid,
-					filename: record.properties["filename"],
         }
 
         entry = Entry.from_json(raw.to_json)
 				entry.save "#{record.uuid.to_s}.json"
-        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}#{record.subpath}#{record.uuid.to_s}"} of String => AnyBasic
+        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
+				puts "Exception"
+				pp ex.backtrace?
         response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
       end
     end
@@ -92,13 +94,14 @@ def process_request(request : Request) : Response
     when ScopeType::Base
       resources.concat query.resources if request.scope == ScopeType::Base
     when ScopeType::Onelevel
-      resources.concat Entry.list Edraj.settings.data_path / subpath
+			resources.concat Entry.list Edraj.settings.data_path / "spaces" / request.space / subpath
     end
 
     count = 0
     resources.each do |one|
       record = Record.new(ResourceType::Message, actor, subpath)
-      entry = Entry.from_json Edraj.settings.data_path / request.space / subpath, one.to_s
+			entry = Entry.from_json Edraj.settings.data_path / "spaces" / request.space / subpath, "#{one.to_s}.json"
+			puts entry.to_pretty_json2
       record.properties["from"] = entry.properties["from"].to_s
       record.properties["to"] = entry.properties["to"]
       record.properties["body"] = entry.properties["body"]
@@ -107,6 +110,7 @@ def process_request(request : Request) : Response
       response.records << record
       count += 1
     end
+		response.results << Result.new ResultType::Success, {"returned" => response.records.size.to_i64, "total" => response.records.size.to_i64} of String => AnyBasic
   when RequestType::Login
     response = Response.new
     actor = request.actor
@@ -128,6 +132,7 @@ post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
   begin
     raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
+		puts "processing new api call ... #{ctx.request.body}"
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
