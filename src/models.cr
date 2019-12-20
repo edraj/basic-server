@@ -130,13 +130,12 @@ module Edraj
 		end
 
     # One-level meta-json children resources of type resource_type
-    def resources(resource_types : Array(ResourceType)) : Array(UUID)
-      list = [] of UUID
-
+    def resources(resource_types : Array(ResourceType)) : Array(Locator)
+      list = [] of Locator
       resource_types.each do |resource_type|
         extension = "#{resource_type.to_s.downcase}.json" 
         Dir.glob("#{@locator.path}/*.#{extension}") do |one|
-          list << UUID.new File.basename one, ".#{extension}"
+          list << Locator.new @locator.space, @locator.subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
         end
       end
       
@@ -258,7 +257,7 @@ module Edraj
     include JSON::Serializable
     property subpath : String
     property resources : Array(UUID)?
-		property resource_types : Array(ResourceType)?
+		property resource_types : Array(ResourceType)
     property search : String?
     property from_date : Time?
     property to_date : Time?

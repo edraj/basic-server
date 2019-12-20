@@ -91,21 +91,18 @@ def process_request(request : Request) : Response
     subpath = query.subpath
 
 		entry = Entry.new request.space, query.subpath, ResourceType::Folder
-    resources = [] of UUID
+    resources = [] of Locator
 
-    case request.scope
-    when ScopeType::Base
-      res = query.resources
-      resources.concat res if res
-    when ScopeType::Onelevel
-      resources.concat entry.resources [ResourceType::Message]
-    end
+    #case request.scope
+    #when ScopeType::Base
+    #when ScopeType::Onelevel
+    resources.concat entry.resources query.resource_types
+    #end
 
     count = 0
     resources.each do |one|
-      record = Record.new(ResourceType::Message, actor, subpath)
-			item_locator = Locator.new(request.space, subpath, ResourceType::Message, one)
-      entry = Entry.new item_locator
+      record = Record.new(one.resource_type, actor, subpath)
+			entry = Entry.new one
       puts entry.meta.to_pretty_json2
       record.properties["from"] = entry.meta.properties["from"].to_s
       record.properties["to"] = entry.meta.properties["to"]

@@ -7,6 +7,7 @@
 	"scope":"Onelevel",
 	"query":{
 		"subpath":"messages/teams/core/general",
+		"resource_types": ["message"],
 		"resources":["12b41bae-44ec-4335-8a5b-dd098d57915c"]
 	},
 	"records": []
