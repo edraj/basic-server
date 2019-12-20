@@ -6,7 +6,7 @@ require "./config"
 
 module Edraj
   enum ResourceType
-    # Non-entry types. Respective classes and json-schema exist
+    # Respective classes and json-schema exist
     Notification
     Invitation
     Reply
@@ -19,7 +19,7 @@ module Edraj
     Signature
     Relationship
 
-    # Entry types. No classes, only json-schema
+    # No classes, only json-schema
     Folder  # Folder "only"
     Contact # Person or Organization
     Profile
@@ -40,13 +40,27 @@ module Edraj
     Subtree
   end
 
+  EMPTY_UUID = UUID.new "00000000-0000-4000-0000-000000000000"
+
   class Locator
     include JSON::Serializable
-    property type : ResourceType
-    property uuid : UUID
+		property uuid : UUID #  # Default means uuid is not specified
+    property resource_type : ResourceType
     property space : String
     property subpath : String
-    property uri : String
+    property uri : String? # Remote reference of the resource
+
+		def initialize(@space, @subpath, @resource_type, @uuid = EMPTY_UUID)
+		end
+
+    def json_name
+      #".#{resource_type}/#{uuid.to_s}.json"
+			"#{uuid.to_s}.#{resource_type.to_s.downcase}.json"
+    end
+
+    def path # Absolute local path
+      Edraj.settings.data_path / "spaces" / @space / @subpath
+    end
   end
 
   class Relationship
@@ -56,68 +70,83 @@ module Edraj
     property related_to : Locator
   end
 
-  class Signature
+  #class Signature
+  #  include JSON::Serializable
+  #  property fields : Array(String)
+  #  property timestamp : Time
+  #  property checksum : String
+  #  property keyid : String
+  #  property actor : UUID
+  #  property hash : String
+  #end
+
+	DUMMY_LOCATOR={space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
+
+  # Primary serializable  type
+
+	class Meta
     include JSON::Serializable
-    property fields : Array(String)
     property timestamp : Time
-    property checksum : String
-    property keyid : String
-    property actor : UUID
-    property hash : String
+		property displayname : String?
+		property description : String?
+		property tags = Array(String).new
+		property properties = Hash(String, AnyComplex).new
+    property response_to : Locator?
+    property related_to : Array(Relationship)?
+    #property signature : Signature?
+    #property author : Locator
+    #property comitter : Locator  
+    
+	end
 
-    def verify : Bool
-    end
-  end
+  class Entry
+		property locator : Locator
+		property meta : Meta
 
-  class MetaBase
-    include JSON::Serializable
-    property uuid : UUID
-    property timestamp : Time
-    # property signature : Signature
-    property author : UUID?
-    property type : ResourceType
-    property space : String
-    property subpath : String
+		# New / Empty
+		def initialize(space : String, subpath : String, resource_type : ResourceType, uuid = UUID.random, @meta = Meta.from_json({timestamp: Time.local}.to_json))
+			@locator = Locator.from_json({uuid: uuid, space: space, subpath: subpath, resource_type: resource_type}.to_json)
+		end
+    
+    # forward_missing_to @meta
 
-    # Save
-    def save(filename : String)
-      path = Edraj.settings.data_path / "spaces" / @space / @subpath
+		# Load existing
+		def initialize(@locator)
+			@meta = Meta.from_json @locator.path, @locator.json_name
+		end
+
+    def save()
+      path = locator.path
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
-      File.write path / filename, to_pretty_json
-    end
-  end
-
-
-  class Entry < MetaBase
-    property shortname : String?
-    property displayname : String?
-    property description : String?
-    property tags = Array(String).new
-    property properties : Hash(String, AnyComplex)
-
-    def locator : Locator
-      Locator.from_json({
-        type:    @type,
-        uuid:    @uuid,
-        space:   @space,
-        subpath: @subpath,
-      }.to_json)
+			File.write path / locator.json_name, @meta.to_pretty_json
     end
 
-    # List files
-    def self.list(path, glob = "*")
+		# One-level subfolders
+		def subfolders : Array(String)
+			list = [] of String
+			Dir.glob("#{@locator.path}/*/") do |one|
+				list << File.basename one
+			end
+		end
+
+    # One-level meta-json children resources of type resource_type
+    def resources(resource_types : Array(ResourceType)) : Array(UUID)
       list = [] of UUID
-			puts "Checking #{path}"
-			Dir.glob("#{path}/#{glob}.json") do |one|
-				puts "Found #{one}"
-				list << UUID.new File.basename one, ".json" 
+
+      resource_types.each do |resource_type|
+        extension = "#{resource_type.to_s.downcase}.json" 
+        Dir.glob("#{@locator.path}/*.#{extension}") do |one|
+          list << UUID.new File.basename one, ".#{extension}"
+        end
       end
+      
       list
     end
 
     # Delete
-    def self.delete(path : Path, filename : String)
-      File.delete path / filename
+    def self.delete(locator : Locator, recursive = false)
+			# TBD implement recursive
+      File.delete locator.path / locator.json_name
     end
 
     # Move
@@ -125,39 +154,17 @@ module Edraj
       File.move old, new
     end
 
-    def replies : Hash(UUID, Reply)
-      Hash(UUID, Reply).new
-    end
 
-    def reactions : Hash(UUID, Reaction)
-      Hash(UUID, Reaction).new
-    end
+    #def verify_signature : Bool
+    #end
 
-    def media : Hash(UUID, Media)
-      Hash(UUID, Media).new
-    end
-
-    def subentries : Hash(UUID, Entry)
-      Hash(UUID, Entry).new
-    end
-
-    def relationships : Array(Relationship)
-      Array(Relationship).new
-    end
   end
 
-  class Post < Entry
-    property body : String
-  end
+  #class Contributer < Entry
+  #  property about : String
+  #end
 
-  class Contributer < MetaBase
-    property about : String
-  end
-
-  class Task < Entry
-  end
-
-  class Subscription < MetaBase
+  class Subscription < Meta
     property filter : String
   end
 
@@ -170,26 +177,12 @@ module Edraj
     Sad
   end
 
-  class Reaction < MetaBase
+  class Reaction < Meta
     property reaction_type : ReactionType
-    property response_to_uuid : UUID
   end
 
-  class Reply < MetaBase
+  class Reply < Meta
     property body : String
-    property response_to_uuid : UUID?
-
-    def replies : Hash(UUID, Reply)
-      Hash(UUID, Reply).new
-    end
-
-    def reactions : Hash(UUID, Reaction)
-      Hash(UUID, Reaction).new
-    end
-
-    def media : Hash(UUID, Media)
-      Hash(UUID, Media).new
-    end
   end
 
   #  class Message < Base
@@ -207,7 +200,7 @@ module Edraj
   #  end
 
   enum EncodingType
-		None
+    None
     ASCII
     UTF8
     UTF16
@@ -232,22 +225,14 @@ module Edraj
     MediaType::Database => Set{"sqlite3"},
   }
 
-  class Media < Entry
+  class Media < Meta
     property bytesize : Int64
     property checksum : String
     property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
-		property filename : String
+    property filename : String
     property media_type : MediaType
     property subtype : String
     property encoding : EncodingType
-
-    def comments : Hash(UUID, Comment)
-      Hash(UUID, Comment).new
-    end
-
-    def reactions : Hash(UUID, Reaction)
-      Hash(UUID, Reaction).new
-    end
   end
 
   class Record
@@ -271,15 +256,16 @@ module Edraj
 
   class Query
     include JSON::Serializable
-    property resources = Array(UUID).new
-    property search = ""
+    property subpath : String
+    property resources : Array(UUID)?
+		property resource_types : Array(ResourceType)?
+    property search : String?
     property from_date : Time?
     property to_date : Time?
-    property subpath : String
-    property excluded_fields = Array(String).new
+    property excluded_fields : Array(String)?
     property included_fields : Array(String)?
     property sort = Array(String).new
-		property order = Edraj::OrderType::Natural
+    property order = Edraj::OrderType::Natural
     property limit = 10
     property offset = 0
     property suggested = false

@@ -35,38 +35,39 @@ end
 def process_request(request : Request) : Response
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
-	puts "Processing request"
+  puts "Processing request"
   case request.type
   when RequestType::Create
     request.records.each do |record|
       begin
-				puts "Processing record ..." 
+        puts "Processing record ..."
         record.uuid = UUID.random if record.uuid.nil?
-				record.timestamp = Time.local if record.timestamp.nil?
+        record.timestamp = Time.local if record.timestamp.nil?
         raw = {
-          space:       request.space,
-          subpath:     record.subpath,
-					timestamp:   record.timestamp,
-          type:        record.type,
-          properties:  record.properties,
-          uuid:        record.uuid,
+          #space:      request.space,
+          #subpath:    record.subpath,
+          timestamp:  record.timestamp,
+          #type:       record.type,
+          properties: record.properties,
+          #uuid:       record.uuid,
         }
 
-        entry = Entry.from_json(raw.to_json)
-				entry.save "#{record.uuid.to_s}.json"
+				entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
+        entry.save # "#{record.uuid.to_s}.json"
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
-				puts "Exception"
-				pp ex.backtrace?
+        puts "Exception"
+        pp ex.backtrace?
         response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
       end
     end
   when RequestType::Update
     request.records.each do |record|
       begin
-        entry = Entry.from_json Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
-        entry.properties.merge record.properties
-        entry.save record.uuid.to_s
+				locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+				entry = Entry.new locator
+        entry.meta.properties.merge record.properties
+        entry.save # record.uuid.to_s
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
         response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
@@ -75,7 +76,8 @@ def process_request(request : Request) : Response
   when RequestType::Delete
     request.records.each do |record|
       begin
-        Entry.delete Edraj.settings.data_path / request.space / record.subpath, record.uuid.to_s
+				locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+        Entry.delete locator 
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
         response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
@@ -88,29 +90,32 @@ def process_request(request : Request) : Response
     raise "Query is missing" if query.nil?
     subpath = query.subpath
 
+		entry = Entry.new request.space, query.subpath, ResourceType::Folder
     resources = [] of UUID
 
     case request.scope
     when ScopeType::Base
-      resources.concat query.resources if request.scope == ScopeType::Base
+      res = query.resources
+      resources.concat res if res
     when ScopeType::Onelevel
-			resources.concat Entry.list Edraj.settings.data_path / "spaces" / request.space / subpath
+      resources.concat entry.resources [ResourceType::Message]
     end
 
     count = 0
     resources.each do |one|
       record = Record.new(ResourceType::Message, actor, subpath)
-			entry = Entry.from_json Edraj.settings.data_path / "spaces" / request.space / subpath, "#{one.to_s}.json"
-			puts entry.to_pretty_json2
-      record.properties["from"] = entry.properties["from"].to_s
-      record.properties["to"] = entry.properties["to"]
-      record.properties["body"] = entry.properties["body"]
-      record.properties["timestamp"] = entry.timestamp.to_rfc3339
+			item_locator = Locator.new(request.space, subpath, ResourceType::Message, one)
+      entry = Entry.new item_locator
+      puts entry.meta.to_pretty_json2
+      record.properties["from"] = entry.meta.properties["from"].to_s
+      record.properties["to"] = entry.meta.properties["to"]
+      record.properties["body"] = entry.meta.properties["body"]
+      record.properties["timestamp"] = entry.meta.timestamp.to_rfc3339
       record.properties["subpath"] = subpath
       response.records << record
       count += 1
     end
-		response.results << Result.new ResultType::Success, {"returned" => response.records.size.to_i64, "total" => response.records.size.to_i64} of String => AnyBasic
+    response.results << Result.new ResultType::Success, {"returned" => response.records.size.to_i64, "total" => response.records.size.to_i64} of String => AnyBasic
   when RequestType::Login
     response = Response.new
     actor = request.actor
@@ -132,7 +137,7 @@ post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
   begin
     raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
-		puts "processing new api call ... #{ctx.request.body}"
+    puts "processing new api call ... #{ctx.request.body}"
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
@@ -146,10 +151,10 @@ get "/media/:space/*subpathname" do |ctx|
   # TODO support chunked / range download: Kemal "send_file" supports that already we just need to translate the way.
   # TODO check authtoken which should contain a signed request for granting access passed as a url param.
   # authz = ctx.params.url["authz"]
-	#pp ctx.params.url
-	path = Edraj.settings.data_path / "spaces" / ctx.params.url["space"] / ctx.params.url["subpathname"]
-	#puts "Serving #{path}"
-	send_file ctx, path.to_s
+  # pp ctx.params.url
+  path = Edraj.settings.data_path / "spaces" / ctx.params.url["space"] / ctx.params.url["subpathname"]
+  # puts "Serving #{path}"
+  send_file ctx, path.to_s
 end
 
 post "/media/*subpath" do |ctx|
@@ -158,8 +163,8 @@ post "/media/*subpath" do |ctx|
   begin
     raw_request : String
     temp_file = File.tempfile(".edraj")
-    #raw_filename = ""
-    #raw_filesize = 0
+    # raw_filename = ""
+    # raw_filesize = 0
     request : Request | Nil = nil
     HTTP::FormData.parse(ctx.request) do |part|
       case part.name
@@ -170,24 +175,24 @@ post "/media/*subpath" do |ctx|
         temp_file = File.tempfile do |file|
           IO.copy(part.body, file)
         end
-        #raw_filename = part.filename if part.filename.is_a?(String)
-        #raw_filesize = part.size unless part.size.nil?
+        # raw_filename = part.filename if part.filename.is_a?(String)
+        # raw_filesize = part.size unless part.size.nil?
       end
     end
-		#pp raw_filename.path
-    #pp raw_filesize
+    # pp raw_filename.path
+    # pp raw_filesize
 
-		raise "Bad request" if request.nil?
-		subpath = request.records[0].subpath
-		filename = request.records[0].properties["filename"]
-		
-		raise "First record is missing subpath" if subpath.nil?
-		raise "First record is missing filename" if filename.nil?
-		
-		path = Edraj.settings.data_path / "spaces" / request.space / subpath
-		Dir.mkdir_p path.to_s
-		puts "Copying file from #{temp_file.path} to #{path.to_s}"
-		FileUtils.cp temp_file.path, "#{path.to_s}#{filename}"
+    raise "Bad request" if request.nil?
+    subpath = request.records[0].subpath
+    filename = request.records[0].properties["filename"]
+
+    raise "First record is missing subpath" if subpath.nil?
+    raise "First record is missing filename" if filename.nil?
+
+    path = Edraj.settings.data_path / "spaces" / request.space / subpath
+    Dir.mkdir_p path.to_s
+    puts "Copying file from #{temp_file.path} to #{path.to_s}"
+    FileUtils.cp temp_file.path, "#{path.to_s}#{filename}"
     temp_file.delete
 
     process_request(request).to_pretty_json2
