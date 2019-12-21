@@ -39,8 +39,12 @@ dependencies:
   jwt:
     github: crystal-community/jwt
     branch: master
+  ohm:
+    github: soveran/ohm-crystal
+    branch: master
 
 
-crystal: 0.31.1
+
+crystal: 0.32.1
 
 license: AGPLv3+

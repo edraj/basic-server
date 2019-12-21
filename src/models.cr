@@ -40,6 +40,20 @@ module Edraj
     Subtree
   end
 
+  class Notification
+    include JSON::Serializable
+    property actor : Locator  # Who did it?
+    property timestamp : Time # When start?
+    property action : RequestType # What was the nature of the action
+    property resource : Locator # Where was it applied
+    property duration : Int32 # How long did it take in milliseconds
+    property commit : String # Git commit hash 
+    property result : String # How did it conclude?
+    property result_type : ResultType
+    property properties : Hash(String, AnyComplex)
+    
+  end
+ 
   EMPTY_UUID = UUID.new "00000000-0000-4000-0000-000000000000"
 
   class Locator
@@ -70,15 +84,15 @@ module Edraj
     property related_to : Locator
   end
 
-  #class Signature
-  #  include JSON::Serializable
-  #  property fields : Array(String)
-  #  property timestamp : Time
-  #  property checksum : String
-  #  property keyid : String
-  #  property actor : UUID
-  #  property hash : String
-  #end
+  class Signature
+    include JSON::Serializable
+    property fields : Array(String)
+    property timestamp : Time
+    property checksum : String
+    property keyid : String
+    property signatory : Locator
+    property hash : String
+  end
 
 	DUMMY_LOCATOR={space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
 
@@ -93,9 +107,9 @@ module Edraj
 		property properties = Hash(String, AnyComplex).new
     property response_to : Locator?
     property related_to : Array(Relationship)?
-    #property signature : Signature?
-    #property author : Locator
-    #property comitter : Locator  
+    property signatures : Array(Signature)?
+    property owner : Locator?
+    property author : Locator?
     
 	end
 
@@ -108,7 +122,7 @@ module Edraj
 			@locator = Locator.from_json({uuid: uuid, space: space, subpath: subpath, resource_type: resource_type}.to_json)
 		end
     
-    # forward_missing_to @meta
+    forward_missing_to @meta
 
 		# Load existing
 		def initialize(@locator)
@@ -149,8 +163,8 @@ module Edraj
     end
 
     # Move
-    def self.move(old : Path, new : Path)
-      File.move old, new
+    def self.move(old_path : Path, new_path : Path)
+      File.move old_path, new_path
     end
 
 
@@ -295,6 +309,7 @@ module Edraj
   enum ResultType
     Success
     Inprogress # aka Processing
+    Partial
     Failure
   end
 

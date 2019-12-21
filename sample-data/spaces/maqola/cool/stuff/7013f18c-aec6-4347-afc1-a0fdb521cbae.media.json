@@ -1,0 +1,13 @@
+{
+  "timestamp": "2019-12-19T00:53:36Z",
+  "tags": [],
+  "properties": {
+    "bytesize": 3022.0,
+    "checksum": "041d98179a9017004c204537ac9d5107474d6cdc5cbb39c6bb647231d9da3d4a",
+    "uri": "string",
+    "media_type": "picture",
+    "subtype": "png",
+    "filename": "canvas.png",
+    "encoding": "none"
+  }
+}
