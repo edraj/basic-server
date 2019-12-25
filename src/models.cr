@@ -101,15 +101,17 @@ module Edraj
 	class Meta
     include JSON::Serializable
     property timestamp : Time
-		property displayname : String?
-		property description : String?
+		property displayname : String? # aka title / subject 
+    property description : String?
+    property body : String? 
+    prpoerty body_content_type : String?
 		property tags = Array(String).new
 		property properties = Hash(String, AnyComplex).new
     property response_to : Locator?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
     property owner : Locator?
-    property author : Locator?
+    property author : Locator? # Original author of the content
     
 	end
 
@@ -182,12 +184,15 @@ module Edraj
   end
 
   enum ReactionType
+    Agreed
+    Seen
     Like
     Love
     Dislike
     Laugh
     Angry
     Sad
+    Report # aka Inappropriate
   end
 
   class Reaction < Meta
