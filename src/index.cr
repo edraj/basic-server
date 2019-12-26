@@ -5,7 +5,11 @@ space = "maqola"
 
 index = "#{space}Idx"
 
-Ohm.redis.call "FT.DROP", index
+begin
+	Ohm.redis.call "FT.DROP", index
+rescue ex
+	puts ex.message.colorize.red
+end
 Ohm.redis.call "FT.CREATE", index, "SCHEMA",
   "subpath", "TEXT", "NOSTEM", "SORTABLE",
   "resource_type", "TEXT", "NOSTEM", "SORTABLE",
@@ -13,7 +17,6 @@ Ohm.redis.call "FT.CREATE", index, "SCHEMA",
   "body", "TEXT",
   "author", "TEXT", "NOSTEM", "SORTABLE",
   "timestamp", "NUMERIC",
-  # "displayname", "TEXT",
   "description", "TEXT",
   "owner", "TEXT", "NOSTEM", "SORTABLE",
   "tags", "TAG", "SEPARATOR", "|"
@@ -36,11 +39,14 @@ list.each do |locator|
   entry.index
 end
 
-entries = Edraj::Entry.search space, "hey", "language", "english"
+entries = Edraj::Entry.search space, "he*"
+puts "Returned #{entries.size} results"
+entries.each do |entry|
+	puts "Found #{entry.locator.path}/#{entry.locator.json_name}"
+end
 
-
-#ret = Ohm.redis.call "FT.SEARCH", "#{space}Idx", "hey", "language", "english"
-#if ret.is_a? Array(Resp::Reply)
+# ret = Ohm.redis.call "FT.SEARCH", "#{space}Idx", "hey", "language", "english"
+# if ret.is_a? Array(Resp::Reply)
 #  puts "Got #{ret[0]} results".colorize.red
 #  ret.skip(1).each_slice(2) do |slice|
 #    puts "Doc id #{slice[0]}".colorize.green
@@ -64,7 +70,7 @@ entries = Edraj::Entry.search space, "hey", "language", "english"
 #      end
 #    end
 #  end
-#end
+# end
 
 # Ohm.redis.flushall
 # Ohm.redis.set "Foo", "Bar"
