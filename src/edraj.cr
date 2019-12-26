@@ -35,26 +35,27 @@ end
 def process_request(request : Request) : Response
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
-  puts "Processing request"
+	puts "Processing #{request.type} request"
   case request.type
   when RequestType::Create
     request.records.each do |record|
       begin
-        puts "Processing record ..."
-        record.uuid = UUID.random if record.uuid.nil?
-        record.timestamp = Time.local if record.timestamp.nil?
-        raw = {
-          # space:      request.space,
-          # subpath:    record.subpath,
-          timestamp: record.timestamp,
-          # type:       record.type,
-          properties: record.properties,
-          # uuid:       record.uuid,
-        }
+				puts "Creating record #{record.uuid}"
+        #record.uuid = UUID.random if record.uuid.nil?
+        #record.timestamp = Time.local if record.timestamp.nil?
+				#pp record
+				raw = {
+					timestamp: record.timestamp,
+		 			title: record.properties.delete("title"),
+				 	body:  record.properties.delete("body"),
+				 	tags: record.properties.delete("tags"),
+				 	properties: record.properties
+				}
+				#puts "RAW #{raw.to_pretty_json}"
 
-        entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
+				entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
         entry.save # "#{record.uuid.to_s}.json"
-        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
+				response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{entry.locator.path}/#{entry.locator.json_name}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
         puts "Exception"
         pp ex.backtrace?
@@ -88,7 +89,6 @@ def process_request(request : Request) : Response
     query = request.query
     raise "Actor UUID is missing" if actor.nil?
     raise "Query is missing" if query.nil?
-    subpath = query.subpath
 
     entry = Entry.new request.space, query.subpath, ResourceType::Folder
     resources = [] of Locator
@@ -101,14 +101,22 @@ def process_request(request : Request) : Response
 
     count = 0
     resources.each do |one|
-      record = Record.new(one.resource_type, actor, subpath)
+			record = Record.new(one.resource_type, one.uuid, one.subpath)
       entry = Entry.new one
-      puts entry.meta.to_pretty_json2
+      #puts entry.meta.to_pretty_json2
+			record.properties["uuid"] = entry.locator.uuid.to_s
       record.properties["from"] = entry.meta.properties["from"].to_s
       record.properties["to"] = entry.meta.properties["to"]
-      record.properties["body"] = entry.meta.properties["body"]
-      record.properties["timestamp"] = entry.meta.timestamp.to_rfc3339
-      record.properties["subpath"] = subpath
+			record.properties["title"] = entry.meta.title.to_s if !entry.meta.title.nil?
+			record.properties["body"] = entry.meta.body.to_s
+
+			tags = [] of AnyBasic
+			entry.meta.tags.each do |tag|
+				tags << tag
+			end
+			record.properties["tags"] = tags
+      record.timestamp = entry.meta.timestamp
+      #record.properties["subpath"] = subpath
       response.records << record
       count += 1
     end
@@ -134,7 +142,7 @@ post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
   begin
     raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
-    puts "processing new api call ... #{ctx.request.body}"
+		puts "processing new api call ... #{ctx.request.body.to_s}"
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex

@@ -11,9 +11,11 @@
 			"subpath": "messages/teams/core/general",
 			"timestamp": "2019-12-19T00:53:36.516916000Z",
 			"properties":{
+				"title": "Hey wassp?",
+				"body": "It has been sometime\nHow are you doing?\nregards",
+				"tags": ["personal","family"],
 				"thread_id": "12b41bae-44ec-4335-8a5b-dd098d57915c",
 				"parent_uuid": "041d98179a9017004c204537ac9d5107474d6cdc5cbb39c6bb647231d9da3d4a",
-				"body": "Hey wassp?",
 				"from":"12b41bae-44ec-4335-8a5b-dd098d57915c",
 				"to": ["12b41bae-44ec-4335-8a5b-dd098d57915c"]
 			}
