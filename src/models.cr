@@ -156,15 +156,16 @@ module Edraj
       list
     end
 
-    def self.search(space : String, query : String, *_args) : Array(Entry)
+    def self.search(space : String, query : String, *_args) 
       list = [] of Entry
+			available = 0
       args = ["FT.SEARCH", "#{space}Idx", query, "language", "english"]
       _args.each do |arg|
         args << arg
       end
       ret = Ohm.redis.call args
       if ret.is_a? Array(Resp::Reply)
-        count = ret[0]
+        available = ret[0]
         ret.skip(1).each_slice(2) do |slice|
           data = {} of String => String
           data["uuid"] = slice[0].to_s
@@ -189,9 +190,9 @@ module Edraj
             list << Entry.new space, subpath, resource_type, uuid, meta
           end
         end
-        raise "Returned #{count} but parsed #{list.size}" if count != list.size
+        #raise "Returned #{count} but parsed #{list.size}" if count != list.size
       end
-      list
+			{available, list}
     end
 
     def index
@@ -319,13 +320,13 @@ module Edraj
     include JSON::Serializable
     property type : ResourceType
     property uuid : UUID
-    property timestamp : Time?
+    property timestamp : Time
     property subpath : String
     property properties = Hash(String, AnyComplex).new
     property relationships : Hash(String, Record)?
     property op_id : String?
 
-    def initialize(@type, @uuid, @subpath)
+		def initialize(@type, @subpath, @uuid = UUID.random, @timestamp = Time.local)
     end
   end
 

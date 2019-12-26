@@ -101,7 +101,7 @@ def process_request(request : Request) : Response
 
     count = 0
     resources.each do |one|
-			record = Record.new(one.resource_type, one.uuid, one.subpath)
+			record = Record.new(one.resource_type, one.subpath, one.uuid)
       entry = Entry.new one
       #puts entry.meta.to_pretty_json2
 			record.properties["uuid"] = entry.locator.uuid.to_s

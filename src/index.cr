@@ -39,8 +39,8 @@ list.each do |locator|
   entry.index
 end
 
-entries = Edraj::Entry.search space, "he*"
-puts "Returned #{entries.size} results"
+available, entries = Edraj::Entry.search space, "he*", "limit", "2", "1"
+puts "Returned #{entries.size} / #{available} results"
 entries.each do |entry|
 	puts "Found #{entry.locator.path}/#{entry.locator.json_name}"
 end
