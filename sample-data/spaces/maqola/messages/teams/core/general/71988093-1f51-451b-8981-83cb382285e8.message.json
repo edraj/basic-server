@@ -1,10 +1,14 @@
 {
   "timestamp": "2019-12-19T00:53:36Z",
-  "tags": [],
+  "displayname": "greetings",
+  "tags": [
+    "important",
+    "company"
+  ],
   "properties": {
     "thread_id": "12b41bae-44ec-4335-8a5b-dd098d57915c",
     "parent_uuid": "041d98179a9017004c204537ac9d5107474d6cdc5cbb39c6bb647231d9da3d4a",
-    "body": "Hey wassp?",
+    "body": "Hey wassp?\nThis looks like a nice day. How do you feel today?",
     "from": "12b41bae-44ec-4335-8a5b-dd098d57915c",
     "to": [
       "12b41bae-44ec-4335-8a5b-dd098d57915c"

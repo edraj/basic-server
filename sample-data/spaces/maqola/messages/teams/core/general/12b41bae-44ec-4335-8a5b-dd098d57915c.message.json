@@ -1,9 +1,7 @@
 {
-  "type": "message",
-	"space": "maqola",
-	"subpath": "messages/teams/core/general",
-	"uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
 	"timestamp":"2019-12-06T03:46:07.519451000Z",
+	"tags": ["personal", "sports"],
+	"displayname": "upcoming events",
 	"properties": {
 		"parent_uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
 		"body":"Hello world",

@@ -44,15 +44,15 @@ def process_request(request : Request) : Response
         record.uuid = UUID.random if record.uuid.nil?
         record.timestamp = Time.local if record.timestamp.nil?
         raw = {
-          #space:      request.space,
-          #subpath:    record.subpath,
-          timestamp:  record.timestamp,
-          #type:       record.type,
+          # space:      request.space,
+          # subpath:    record.subpath,
+          timestamp: record.timestamp,
+          # type:       record.type,
           properties: record.properties,
-          #uuid:       record.uuid,
+          # uuid:       record.uuid,
         }
 
-				entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
+        entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
         entry.save # "#{record.uuid.to_s}.json"
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
@@ -64,8 +64,8 @@ def process_request(request : Request) : Response
   when RequestType::Update
     request.records.each do |record|
       begin
-				locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
-				entry = Entry.new locator
+        locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+        entry = Entry.new locator
         entry.meta.properties.merge record.properties
         entry.save # record.uuid.to_s
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
@@ -76,8 +76,8 @@ def process_request(request : Request) : Response
   when RequestType::Delete
     request.records.each do |record|
       begin
-				locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
-        Entry.delete locator 
+        locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+        Entry.delete locator
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
         response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
@@ -90,19 +90,19 @@ def process_request(request : Request) : Response
     raise "Query is missing" if query.nil?
     subpath = query.subpath
 
-		entry = Entry.new request.space, query.subpath, ResourceType::Folder
+    entry = Entry.new request.space, query.subpath, ResourceType::Folder
     resources = [] of Locator
 
-    #case request.scope
-    #when ScopeType::Base
-    #when ScopeType::Onelevel
+    # case request.scope
+    # when ScopeType::Base
+    # when ScopeType::Onelevel
     resources.concat entry.resources query.resource_types
-    #end
+    # end
 
     count = 0
     resources.each do |one|
       record = Record.new(one.resource_type, actor, subpath)
-			entry = Entry.new one
+      entry = Entry.new one
       puts entry.meta.to_pretty_json2
       record.properties["from"] = entry.meta.properties["from"].to_s
       record.properties["to"] = entry.meta.properties["to"]

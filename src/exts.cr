@@ -13,7 +13,7 @@ end
 
 struct Enum
   def to_json(json : JSON::Builder)
-		json.string(to_s)
+    json.string(to_s)
   end
 end
 

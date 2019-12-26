@@ -1,9 +1,7 @@
 {
-  "type": "message",
-	"space": "maqola",
-	"subpath": "messages/teams/core/general",
-	"uuid":"d0398fa4-0567-4dbc-a41b-0292c18d9283",
 	"timestamp":"2019-12-07T21:14:24.114200000Z",
+	"displayname":"business meeting",
+	"tags": ["company", "meeting"],
 	"properties": {
 		"parent_uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
 		"body":"Hello back",

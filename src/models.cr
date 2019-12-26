@@ -3,6 +3,7 @@ require "uuid"
 require "uuid/json"
 require "./exts"
 require "./config"
+require "ohm"
 
 module Edraj
   enum ResourceType
@@ -42,34 +43,33 @@ module Edraj
 
   class Notification
     include JSON::Serializable
-    property actor : Locator  # Who did it?
-    property timestamp : Time # When start?
+    property actor : Locator      # Who did it?
+    property timestamp : Time     # When start?
     property action : RequestType # What was the nature of the action
-    property resource : Locator # Where was it applied
-    property duration : Int32 # How long did it take in milliseconds
-    property commit : String # Git commit hash 
-    property result : String # How did it conclude?
+    property resource : Locator   # Where was it applied
+    property duration : Int32     # How long did it take in milliseconds
+    property commit : String      # Git commit hash
+    property result : String      # How did it conclude?
     property result_type : ResultType
     property properties : Hash(String, AnyComplex)
-    
   end
- 
+
   EMPTY_UUID = UUID.new "00000000-0000-4000-0000-000000000000"
 
   class Locator
     include JSON::Serializable
-		property uuid : UUID #  # Default means uuid is not specified
+    property uuid : UUID #  # Default means uuid is not specified
     property resource_type : ResourceType
     property space : String
     property subpath : String
     property uri : String? # Remote reference of the resource
 
-		def initialize(@space, @subpath, @resource_type, @uuid = EMPTY_UUID)
-		end
+    def initialize(@space, @subpath, @resource_type, @uuid = EMPTY_UUID)
+    end
 
     def json_name
-      #".#{resource_type}/#{uuid.to_s}.json"
-			"#{uuid.to_s}.#{resource_type.to_s.downcase}.json"
+      # ".#{resource_type}/#{uuid.to_s}.json"
+      "#{uuid.to_s}.#{resource_type.to_s.downcase}.json"
     end
 
     def path # Absolute local path
@@ -94,73 +94,133 @@ module Edraj
     property hash : String
   end
 
-	DUMMY_LOCATOR={space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
+  DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
 
   # Primary serializable  type
 
-	class Meta
+  class Meta
     include JSON::Serializable
     property timestamp : Time
-		property displayname : String? # aka title / subject 
+    property title : String? # subject / displayname
     property description : String?
-    property body : String? 
-    prpoerty body_content_type : String?
-		property tags = Array(String).new
-		property properties = Hash(String, AnyComplex).new
+    property body : String?
+    property body_content_type : String?
+    property tags = Array(String).new
+    property properties = Hash(String, AnyComplex).new
     property response_to : Locator?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
     property owner : Locator?
     property author : Locator? # Original author of the content
-    
-	end
+
+  end
 
   class Entry
-		property locator : Locator
-		property meta : Meta
+    property locator : Locator
+    property meta : Meta
 
-		# New / Empty
-		def initialize(space : String, subpath : String, resource_type : ResourceType, uuid = UUID.random, @meta = Meta.from_json({timestamp: Time.local}.to_json))
-			@locator = Locator.from_json({uuid: uuid, space: space, subpath: subpath, resource_type: resource_type}.to_json)
-		end
-    
-    forward_missing_to @meta
-
-		# Load existing
-		def initialize(@locator)
-			@meta = Meta.from_json @locator.path, @locator.json_name
-		end
-
-    def save()
-      path = locator.path
-      Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
-			File.write path / locator.json_name, @meta.to_pretty_json
+    # New / Empty
+    def initialize(space : String, subpath : String, resource_type : ResourceType, uuid = UUID.random, @meta = Meta.from_json({timestamp: Time.local}.to_json))
+      @locator = Locator.from_json({uuid: uuid, space: space, subpath: subpath, resource_type: resource_type}.to_json)
     end
 
-		# One-level subfolders
-		def subfolders : Array(String)
-			list = [] of String
-			Dir.glob("#{@locator.path}/*/") do |one|
-				list << File.basename one
-			end
-		end
+    # Load existing
+    def initialize(@locator)
+      @meta = Meta.from_json @locator.path, @locator.json_name
+    end
+
+    def save
+      path = locator.path
+      Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
+      File.write path / locator.json_name, @meta.to_pretty_json
+    end
+
+    # One-level subfolders
+    def subfolders : Array(String)
+      list = [] of String
+      Dir.glob("#{@locator.path}/*/") do |one|
+        list << File.basename one
+      end
+    end
 
     # One-level meta-json children resources of type resource_type
     def resources(resource_types : Array(ResourceType)) : Array(Locator)
       list = [] of Locator
       resource_types.each do |resource_type|
-        extension = "#{resource_type.to_s.downcase}.json" 
+        extension = "#{resource_type.to_s.downcase}.json"
         Dir.glob("#{@locator.path}/*.#{extension}") do |one|
           list << Locator.new @locator.space, @locator.subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
         end
       end
-      
+
       list
+    end
+
+    def self.search(space : String, query : String, *_args) : Array(Entry)
+      list = [] of Entry
+      args = ["FT.SEARCH", "#{space}Idx", query, "language", "english"]
+			_args.each do |arg|
+				args << arg
+			end
+      ret = Ohm.redis.call args
+      if ret.is_a? Array(Resp::Reply)
+        count = ret[0]
+        ret.skip(1).each_slice(2) do |slice|
+          data = {} of String => String
+					data["uuid"] = slice[0].to_s
+          props = slice[1]
+          if props.is_a? Array(Resp::Reply)
+            props.each_slice(2) do |property|
+              print "#{property[0]} => ".colorize.blue
+							puts "#{property[1]}".colorize.red
+              if property[1].is_a? String
+								data[property[0].to_s] = property[1].to_s
+              end
+            end
+						subpath = data.delete("subpath").to_s
+						resource_type = ResourceType.parse(data.delete("resource_type").to_s)
+						uuid = UUID.new(data.delete("uuid").to_s)
+						timestamp = Time.unix(data.delete("timestamp").to_s.to_i)
+						meta = Meta.from_json({timestamp: timestamp}.to_json)
+						meta.tags = data.delete("tags").to_s.split("|")  if data.has_key? "tags"
+						meta.body = data.delete("body").to_s if data.has_key? "body"
+						meta.title = data.delete("title").to_s if data.has_key? "title"
+						raise "Unprocessed data #{data.to_json}" if data.size > 0
+						#data.each do |k,v|
+						#meta.properties["k"] = v
+						#end
+            list << Entry.new space, subpath, resource_type, uuid, meta
+          end
+        end
+        raise "Returned #{count} but parsed #{list.size}" if count != list.size
+      end
+      list
+    end
+
+    def index
+      args = ["FT.ADD", "#{@locator.space}Idx", @locator.uuid, "1.0",
+              "LANGUAGE", "english", "FIELDS",
+              "subpath", @locator.subpath,
+              "resource_type", @locator.resource_type.to_s.downcase,
+              "timestamp", @meta.timestamp.to_unix]
+      if @meta.properties.has_key? "body"
+        args << "body" << @meta.properties["body"].to_s
+      end
+      if !@meta.title.nil?
+        args << "title" << @meta.title.to_s
+      end
+      if !@meta.description.nil?
+        args << "description" << @meta.description.to_s
+      end
+      if @meta.tags.size > 0
+        args << "tags" << @meta.tags.join("|")
+      end
+      Ohm.redis.call args
     end
 
     # Delete
     def self.delete(locator : Locator, recursive = false)
-			# TBD implement recursive
+      # TBD implement recursive
       File.delete locator.path / locator.json_name
     end
 
@@ -169,15 +229,29 @@ module Edraj
       File.move old_path, new_path
     end
 
+    # One-level meta-json children resources of type resource_type
+    def self.resources(space : String, subpath : String, resource_types : Array(ResourceType)) : Array(Locator)
+      list = [] of Locator
+      path = Edraj.settings.data_path / "spaces" / space / subpath
+      resource_types.each do |resource_type|
+        extension = "#{resource_type.to_s.downcase}.json"
+        Dir.glob("#{path}/*.#{extension}") do |one|
+          list << Locator.new space, subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
+        end
+      end
 
-    #def verify_signature : Bool
-    #end
+      list
+    end
 
+    # def verify_signature : Bool
+    # end
+
+    forward_missing_to @meta
   end
 
-  #class Contributer < Entry
+  # class Contributer < Entry
   #  property about : String
-  #end
+  # end
 
   class Subscription < Meta
     property filter : String
@@ -200,7 +274,6 @@ module Edraj
   end
 
   class Reply < Meta
-    property body : String
   end
 
   #  class Message < Base
@@ -276,7 +349,7 @@ module Edraj
     include JSON::Serializable
     property subpath : String
     property resources : Array(UUID)?
-		property resource_types : Array(ResourceType)
+    property resource_types : Array(ResourceType)
     property search : String?
     property from_date : Time?
     property to_date : Time?
