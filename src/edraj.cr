@@ -45,7 +45,7 @@ def process_request(request : Request) : Response
         #record.timestamp = Time.local if record.timestamp.nil?
 				#pp record
 				raw = {
-					timestamp: record.timestamp,
+					#timestamp: record.timestamp,
 		 			title: record.properties.delete("title"),
 				 	body:  record.properties.delete("body"),
 				 	tags: record.properties.delete("tags"),
@@ -115,7 +115,7 @@ def process_request(request : Request) : Response
 				tags << tag
 			end
 			record.properties["tags"] = tags
-      record.timestamp = entry.meta.timestamp
+      #record.timestamp = entry.meta.timestamp
       #record.properties["subpath"] = subpath
       response.records << record
       count += 1

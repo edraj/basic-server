@@ -54,22 +54,21 @@ module Edraj
     property properties : Hash(String, AnyComplex)
   end
 
-  EMPTY_UUID = UUID.new "00000000-0000-4000-0000-000000000000"
+  # Empty UUID "00000000-0000-4000-0000-000000000000"
 
   class Locator
     include JSON::Serializable
-    property uuid : UUID #  # Default means uuid is not specified
-    property resource_type : ResourceType
+		property uuid : UUID? # folder meta file is .meta.json 
+		property resource_type : ResourceType
     property space : String
     property subpath : String
     property uri : String? # Remote reference of the resource
 
-    def initialize(@space, @subpath, @resource_type, @uuid = EMPTY_UUID)
+    def initialize(@space, @subpath, @resource_type, @uuid = nil)
     end
 
     def json_name
-      # ".#{resource_type}/#{uuid.to_s}.json"
-      "#{uuid.to_s}.#{resource_type.to_s.downcase}.json"
+      "#{uuid.to_s}.meta.json"
     end
 
     def path # Absolute local path
@@ -94,45 +93,64 @@ module Edraj
     property hash : String
   end
 
-  DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
+  #DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
 
   # Primary serializable  type
-
-  class Meta
+	class Content # Each entry has one or more payload  
     include JSON::Serializable
-    property timestamp : Time
+		property location : String # file://filepathname, embedded://, uri://server...
+		property timestamp : Time
+    property tags = Array(String).new
     property title : String? # subject / displayname
     property description : String?
-    property body : String?
-    property body_content_type : String?
-    property tags = Array(String).new
-    property properties = Hash(String, AnyComplex).new
+    property body : ::JSON::Any
+		property content_type : String # json+schema, media+subtype, folder, ...
+		property content_encoding : String?
+		property actor : Locator? # Actor who caused this payload to be created: user, app (iot) ...
+		property owner : Locator # Owner of the payload : user, group ...
+    property author : Locator? # Original author of the content
     property response_to : Locator?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
-    property owner : Locator?
-    property author : Locator? # Original author of the content
 
-  end
+		def json_content
+			return @body if @location.starts_with? "embedded://"
+			return ::JSON.parse File.read @location.lchop "file://" if @location.starts_with? "file://"
+		end
+
+		def string_conent
+			return @body.to_s if @location.starts_with? "embedded://"
+			return File.read @location.lchop "file://" if @location.starts_with? "file://"
+
+		end
+	end
+
+#  class EntryMeta # Each entry has one exact meta file
+#    property tags = Array(String).new
+#		property files = Array(Content).new
+#  end
+
+	class Collection < Content
+		property attachments = Array(Content).new
+	end
 
   class Entry
     property locator : Locator
-    property meta : Meta
+    property collection  : Collection
 
     # New / Empty
-    def initialize(space : String, subpath : String, resource_type : ResourceType, uuid = UUID.random, @meta = Meta.from_json({timestamp: Time.local}.to_json))
-      @locator = Locator.from_json({uuid: uuid, space: space, subpath: subpath, resource_type: resource_type}.to_json)
-    end
+		def initialize(@locator, @collection)
+		end
 
     # Load existing
     def initialize(@locator)
-      @meta = Meta.from_json @locator.path, @locator.json_name
+      @collection = Collection.from_json @locator.path, @locator.json_name
     end
 
     def save
       path = locator.path
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
-      File.write path / locator.json_name, @meta.to_pretty_json
+      File.write path / locator.json_name, @collection.to_pretty_json
     end
 
     # One-level subfolders
@@ -181,8 +199,9 @@ module Edraj
             subpath = data.delete("subpath").to_s
             resource_type = ResourceType.parse(data.delete("resource_type").to_s)
             uuid = UUID.new(data.delete("uuid").to_s)
-            timestamp = Time.unix(data.delete("timestamp").to_s.to_i)
-            meta = Meta.from_json({timestamp: timestamp}.to_json)
+            #timestamp = Time.unix(data.delete("timestamp").to_s.to_i)
+            #meta = Meta.from_json({timestamp: timestamp}.to_json)
+            meta = Meta.from_json("{}")
             meta.tags = data.delete("tags").to_s.split("|") if data.has_key? "tags"
             meta.body = data.delete("body").to_s if data.has_key? "body"
             meta.title = data.delete("title").to_s if data.has_key? "title"
@@ -200,7 +219,8 @@ module Edraj
               "LANGUAGE", "english", "FIELDS",
               "subpath", @locator.subpath,
               "resource_type", @locator.resource_type.to_s.downcase,
-              "timestamp", @meta.timestamp.to_unix]
+              #"timestamp", @meta.timestamp.to_unix,
+							]
       args << "body" << @meta.body.to_s if !@meta.body.nil?
       args << "title" << @meta.title.to_s if !@meta.title.nil?
       args << "description" << @meta.description.to_s if !@meta.description.nil?
@@ -243,7 +263,7 @@ module Edraj
   #  property about : String
   # end
 
-  class Subscription < Meta
+  class Subscription < Content
     property filter : String
   end
 
@@ -259,26 +279,25 @@ module Edraj
     Report # aka Inappropriate
   end
 
-  class Reaction < Meta
+  class Reaction < Content
     property reaction_type : ReactionType
   end
 
-  class Reply < Meta
+  #class Reply 
+	#	property 
+  #end
+
+  class Message < Collection
+    property from : UUID
+    property to : Array(UUID)
+    property thread_id : UUID
   end
 
-  #  class Message < Base
-  #    property subject : String?
-  #		property body : String
-  #    property from : UUID
-  #    property to : Array(UUID)
-  #    property thread_id : UUID
-  #  end
+  class Contact < Collection
+  end
 
-  #  class Contact < Base
-  #  end
-
-  #  class Folder < Entry
-  #  end
+  class Folder < Collection
+  end
 
   enum EncodingType
     None
@@ -306,7 +325,7 @@ module Edraj
     MediaType::Database => Set{"sqlite3"},
   }
 
-  class Media < Meta
+  class Media < Content
     property bytesize : Int64
     property checksum : String
     property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
@@ -318,15 +337,14 @@ module Edraj
 
   class Record
     include JSON::Serializable
-    property type : ResourceType
-    property uuid : UUID
-    property timestamp : Time
+		property resource_type : ResourceType
+    property uuid : UUID?
     property subpath : String
     property properties = Hash(String, AnyComplex).new
     property relationships : Hash(String, Record)?
     property op_id : String?
 
-		def initialize(@type, @subpath, @uuid = UUID.random, @timestamp = Time.local)
+		def initialize(@resource_type, @subpath, @uuid = nil)
     end
   end
 
@@ -339,7 +357,7 @@ module Edraj
     include JSON::Serializable
     property subpath : String
     property resources : Array(UUID)?
-    property resource_types : Array(ResourceType)
+    property content_types : Array(String)
     property search : String?
     property from_date : Time?
     property to_date : Time?
