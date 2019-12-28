@@ -8,6 +8,7 @@ require "ohm"
 module Edraj
   enum ResourceType
     # Respective classes and json-schema exist
+		Actor
     Notification
     Invitation
     Reply
@@ -96,14 +97,14 @@ module Edraj
   #DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
 
   # Primary serializable  type
-	class Content # Each entry has one or more payload  
+	class Content 
     include JSON::Serializable
 		property location : String # file://filepathname, embedded://, uri://server...
 		property timestamp : Time
     property tags = Array(String).new
     property title : String? # subject / displayname
     property description : String?
-    property body : ::JSON::Any
+    property body : ::JSON::Any 
 		property content_type : String # json+schema, media+subtype, folder, ...
 		property content_encoding : String?
 		property actor : Locator? # Actor who caused this payload to be created: user, app (iot) ...
@@ -113,15 +114,21 @@ module Edraj
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
 
-		def json_content
+		def json_body
 			return @body if @location.starts_with? "embedded://"
 			return ::JSON.parse File.read @location.lchop "file://" if @location.starts_with? "file://"
 		end
 
-		def string_conent
+		def string_body
 			return @body.to_s if @location.starts_with? "embedded://"
 			return File.read @location.lchop "file://" if @location.starts_with? "file://"
+		end
 
+		def io_body
+			# TBD 
+		end
+
+		def initialize(@owner, @location, @content_type, @body, @timestamp)
 		end
 	end
 
@@ -136,15 +143,22 @@ module Edraj
 
   class Entry
     property locator : Locator
-    property collection  : Collection
+    property content  : Collection | Content | Subscription | Message | Contact | Folder | Reaction | Reply 
 
     # New / Empty
-		def initialize(@locator, @collection)
+		def initialize(@locator, @content)
 		end
 
     # Load existing
     def initialize(@locator)
-      @collection = Collection.from_json @locator.path, @locator.json_name
+			case @locator.resource_type
+			when ResourceType::Message
+				@content = Message.from_json @locator.path, @locator.json_name
+			when ResourceType::Reply
+				@content = Reply.from_json @locator.path, @locator.json_name
+			else
+				@content = Collection.from_json @locator.path, @locator.json_name
+			end
     end
 
     def save
@@ -265,6 +279,8 @@ module Edraj
 
   class Subscription < Content
     property filter : String
+		def initialize(@owner, @location, @content_type, @body, @timestamp, @filter)
+		end
   end
 
   enum ReactionType
@@ -281,16 +297,20 @@ module Edraj
 
   class Reaction < Content
     property reaction_type : ReactionType
+		def initialize(@owner, @location, @content_type, @body, @timestamp, @reaction_type)
+		end
   end
 
-  #class Reply 
+  class Reply < Content
 	#	property 
-  #end
+  end
 
   class Message < Collection
     property from : UUID
     property to : Array(UUID)
     property thread_id : UUID
+		def initialize(@owner, @location, @content_type, @body, @timestamp, @from, @to, @thread_id)
+		end
   end
 
   class Contact < Collection
@@ -325,15 +345,17 @@ module Edraj
     MediaType::Database => Set{"sqlite3"},
   }
 
-  class Media < Content
-    property bytesize : Int64
-    property checksum : String
-    property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
-    property filename : String
-    property media_type : MediaType
-    property subtype : String
-    property encoding : EncodingType
-  end
+#  class Media < Content
+#    property bytesize : Int64
+#    property checksum : String
+#    property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
+#    property filename : String
+#    property media_type : MediaType
+#    property subtype : String
+#    property encoding : EncodingType
+#		def initialize(@owner, @location, @content_type, @body, @timestamp)
+#		end
+#  end
 
   class Record
     include JSON::Serializable

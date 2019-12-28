@@ -52,8 +52,9 @@ def process_request(request : Request) : Response
 				 	properties: record.properties
 				}
 				#puts "RAW #{raw.to_pretty_json}"
-
-				entry = Entry.new request.space, record.subpath, record.type, record.uuid, Meta.from_json(raw.to_json)
+				user = Locator.new "users", "core", ResourceType::Actor
+				content = Content.new 
+				entry = Entry.new Locator.new(request.space, record.subpath, record.resource_type, record.uuid), content
         entry.save # "#{record.uuid.to_s}.json"
 				response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{entry.locator.path}/#{entry.locator.json_name}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
