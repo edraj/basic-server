@@ -6,9 +6,9 @@ space = "maqola"
 index = "#{space}Idx"
 
 begin
-	Ohm.redis.call "FT.DROP", index
+  Ohm.redis.call "FT.DROP", index
 rescue ex
-	puts ex.message.colorize.red
+  puts ex.message.colorize.red
 end
 Ohm.redis.call "FT.CREATE", index, "SCHEMA",
   "subpath", "TEXT", "NOSTEM", "SORTABLE",
@@ -42,7 +42,7 @@ end
 available, entries = Edraj::Entry.search space, "he*", "limit", "2", "1"
 puts "Returned #{entries.size} / #{available} results"
 entries.each do |entry|
-	puts "Found #{entry.locator.path}/#{entry.locator.json_name}"
+  puts "Found #{entry.locator.path}/#{entry.locator.json_name}"
 end
 
 # ret = Ohm.redis.call "FT.SEARCH", "#{space}Idx", "hey", "language", "english"

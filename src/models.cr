@@ -8,7 +8,7 @@ require "ohm"
 module Edraj
   enum ResourceType
     # Respective classes and json-schema exist
-		Actor
+    Actor
     Notification
     Invitation
     Reply
@@ -59,8 +59,8 @@ module Edraj
 
   class Locator
     include JSON::Serializable
-		property uuid : UUID? # folder meta file is .meta.json 
-		property resource_type : ResourceType
+    property uuid : UUID? # folder meta file is .meta.json
+    property resource_type : ResourceType
     property space : String
     property subpath : String
     property uri : String? # Remote reference of the resource
@@ -94,77 +94,95 @@ module Edraj
     property hash : String
   end
 
-  #DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
+  # DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ResourceType::Message}.to_json
 
   # Primary serializable  type
-	class Content 
+  class Content
     include JSON::Serializable
-		property location : String # file://filepathname, embedded://, uri://server...
-		property timestamp : Time
+    property location : String = "none" # file://filepathname, embedded, uri://server..., none
+    property timestamp : Time = Time.local
     property tags = Array(String).new
     property title : String? # subject / displayname
     property description : String?
-    property body : ::JSON::Any 
-		property content_type : String # json+schema, media+subtype, folder, ...
-		property content_encoding : String?
-		property actor : Locator? # Actor who caused this payload to be created: user, app (iot) ...
-		property owner : Locator # Owner of the payload : user, group ...
+    property payload : ::JSON::Any = ::JSON::Any.new nil # aks Body/Payload
+    property content_type : String = "none"              # json+schema, media+subtype, folder, ...
+    property content_encoding : String?
+    property actor : Locator?  # Actor who caused this payload to be created: user, app (iot) ...
+    property owner : Locator   # Owner of the payload : user, group ...
     property author : Locator? # Original author of the content
     property response_to : Locator?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
 
-		def json_body
-			return @body if @location.starts_with? "embedded://"
-			return ::JSON.parse File.read @location.lchop "file://" if @location.starts_with? "file://"
-		end
+    def json_payload : JSON::Any
+      return @payload if @location.starts_with? "embedded"
+      return ::JSON.parse File.read @location.lchop "file://" if @location.starts_with? "file://"
+      JSON::Any.new nil
+    end
 
-		def string_body
-			return @body.to_s if @location.starts_with? "embedded://"
-			return File.read @location.lchop "file://" if @location.starts_with? "file://"
-		end
+    def string_payload
+      return @payload.to_s if @location.starts_with? "embedded"
+      return File.read @location.lchop "file://" if @location.starts_with? "file://"
+    end
 
-		def io_body
-			# TBD 
-		end
+    def io_payload
+      # TBD
+    end
 
-		def initialize(@owner, @location, @content_type, @body, @timestamp)
-		end
-	end
+    def initialize(@owner)
+    end
 
-#  class EntryMeta # Each entry has one exact meta file
-#    property tags = Array(String).new
-#		property files = Array(Content).new
-#  end
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType)
+      list = {} of String => JSON::Any
+      included = [] of Locator
+      list["title"] = JSON::Any.new @title.to_s if @title && (!fields.has_key?("title") || fields.has_key?("title"))
+      list["body"] = json_payload
 
-	class Collection < Content
-		property attachments = Array(Content).new
-	end
+      if @tags.size > 0
+        _tags = [] of JSON::Any
+        @tags.each do |tag|
+          _tags << JSON::Any.new tag
+        end
+        list["tags"] = JSON::Any.new _tags
+      end
+
+      {list, included}
+    end
+  end
+
+  #  class EntryMeta # Each entry has one exact meta file
+  #    property tags = Array(String).new
+  #		property files = Array(Content).new
+  #  end
+
+  class Collection < Content
+    property attachments = Array(Content).new
+  end
 
   class Entry
     property locator : Locator
-    property content  : Collection | Content | Subscription | Message | Contact | Folder | Reaction | Reply 
+    property content : Collection | Content | Subscription | Message | Contact | Folder | Reaction | Reply
 
     # New / Empty
-		def initialize(@locator, @content)
-		end
+    def initialize(@locator, @content)
+    end
 
     # Load existing
     def initialize(@locator)
-			case @locator.resource_type
-			when ResourceType::Message
-				@content = Message.from_json @locator.path, @locator.json_name
-			when ResourceType::Reply
-				@content = Reply.from_json @locator.path, @locator.json_name
-			else
-				@content = Collection.from_json @locator.path, @locator.json_name
-			end
+      case @locator.resource_type
+      when ResourceType::Message
+        @content = Message.from_json @locator.path, @locator.json_name
+      when ResourceType::Reply
+        @content = Reply.from_json @locator.path, @locator.json_name
+      else
+        @content = Collection.from_json @locator.path, @locator.json_name
+      end
     end
 
     def save
       path = locator.path
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
-      File.write path / locator.json_name, @collection.to_pretty_json
+      File.write path / locator.json_name, @content.to_pretty_json
     end
 
     # One-level subfolders
@@ -188,9 +206,9 @@ module Edraj
       list
     end
 
-    def self.search(space : String, query : String, *_args) 
+    def self.search(space : String, query : String, *_args)
       list = [] of Entry
-			available = 0
+      available = 0
       args = ["FT.SEARCH", "#{space}Idx", query, "language", "english"]
       _args.each do |arg|
         args << arg
@@ -213,8 +231,8 @@ module Edraj
             subpath = data.delete("subpath").to_s
             resource_type = ResourceType.parse(data.delete("resource_type").to_s)
             uuid = UUID.new(data.delete("uuid").to_s)
-            #timestamp = Time.unix(data.delete("timestamp").to_s.to_i)
-            #meta = Meta.from_json({timestamp: timestamp}.to_json)
+            # timestamp = Time.unix(data.delete("timestamp").to_s.to_i)
+            # meta = Meta.from_json({timestamp: timestamp}.to_json)
             meta = Meta.from_json("{}")
             meta.tags = data.delete("tags").to_s.split("|") if data.has_key? "tags"
             meta.body = data.delete("body").to_s if data.has_key? "body"
@@ -223,9 +241,9 @@ module Edraj
             list << Entry.new space, subpath, resource_type, uuid, meta
           end
         end
-        #raise "Returned #{count} but parsed #{list.size}" if count != list.size
+        # raise "Returned #{count} but parsed #{list.size}" if count != list.size
       end
-			{available, list}
+      {available, list}
     end
 
     def index
@@ -233,8 +251,8 @@ module Edraj
               "LANGUAGE", "english", "FIELDS",
               "subpath", @locator.subpath,
               "resource_type", @locator.resource_type.to_s.downcase,
-              #"timestamp", @meta.timestamp.to_unix,
-							]
+              # "timestamp", @meta.timestamp.to_unix,
+      ]
       args << "body" << @meta.body.to_s if !@meta.body.nil?
       args << "title" << @meta.title.to_s if !@meta.title.nil?
       args << "description" << @meta.description.to_s if !@meta.description.nil?
@@ -270,7 +288,7 @@ module Edraj
     # def verify_signature : Bool
     # end
 
-    forward_missing_to @meta
+    forward_missing_to @content
   end
 
   # class Contributer < Entry
@@ -279,8 +297,9 @@ module Edraj
 
   class Subscription < Content
     property filter : String
-		def initialize(@owner, @location, @content_type, @body, @timestamp, @filter)
-		end
+
+    def initialize(@owner, @location, @content_type, @body, @timestamp, @filter)
+    end
   end
 
   enum ReactionType
@@ -297,20 +316,30 @@ module Edraj
 
   class Reaction < Content
     property reaction_type : ReactionType
-		def initialize(@owner, @location, @content_type, @body, @timestamp, @reaction_type)
-		end
+
+    def initialize(@owner, @location, @content_type, @body, @timestamp, @reaction_type)
+    end
   end
 
   class Reply < Content
-	#	property 
+    #	property
   end
 
   class Message < Collection
     property from : UUID
     property to : Array(UUID)
     property thread_id : UUID
-		def initialize(@owner, @location, @content_type, @body, @timestamp, @from, @to, @thread_id)
-		end
+
+    def initialize(@owner, @location, @content_type, @body, @timestamp, @from, @to, @thread_id)
+    end
+
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType)
+      list, included = super(fields, includes)
+      list["from"] = JSON::Any.new @from.to_s
+      list["to"] = JSON.parse @to.to_json
+
+      {list, included}
+    end
   end
 
   class Contact < Collection
@@ -345,28 +374,29 @@ module Edraj
     MediaType::Database => Set{"sqlite3"},
   }
 
-#  class Media < Content
-#    property bytesize : Int64
-#    property checksum : String
-#    property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
-#    property filename : String
-#    property media_type : MediaType
-#    property subtype : String
-#    property encoding : EncodingType
-#		def initialize(@owner, @location, @content_type, @body, @timestamp)
-#		end
-#  end
+  #  class Media < Content
+  #    property bytesize : Int64
+  #    property checksum : String
+  #    property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
+  #    property filename : String
+  #    property media_type : MediaType
+  #    property subtype : String
+  #    property encoding : EncodingType
+  #		def initialize(@owner, @location, @content_type, @body, @timestamp)
+  #		end
+  #  end
 
   class Record
     include JSON::Serializable
-		property resource_type : ResourceType
+    property timestamp : Time = Time.local
+    property resource_type : ResourceType
     property uuid : UUID?
     property subpath : String
-    property properties = Hash(String, AnyComplex).new
+    property properties = Hash(String, ::JSON::Any).new
     property relationships : Hash(String, Record)?
     property op_id : String?
 
-		def initialize(@resource_type, @subpath, @uuid = nil)
+    def initialize(@resource_type, @subpath, @uuid = nil)
     end
   end
 
@@ -379,7 +409,7 @@ module Edraj
     include JSON::Serializable
     property subpath : String
     property resources : Array(UUID)?
-    property content_types : Array(String)
+    property resource_types : Array(ResourceType)
     property search : String?
     property from_date : Time?
     property to_date : Time?

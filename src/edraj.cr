@@ -35,28 +35,31 @@ end
 def process_request(request : Request) : Response
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
-	puts "Processing #{request.type} request"
+  puts "Processing #{request.type} request"
   case request.type
   when RequestType::Create
     request.records.each do |record|
       begin
-				puts "Creating record #{record.uuid}"
-        #record.uuid = UUID.random if record.uuid.nil?
-        #record.timestamp = Time.local if record.timestamp.nil?
-				#pp record
-				raw = {
-					#timestamp: record.timestamp,
-		 			title: record.properties.delete("title"),
-				 	body:  record.properties.delete("body"),
-				 	tags: record.properties.delete("tags"),
-				 	properties: record.properties
-				}
-				#puts "RAW #{raw.to_pretty_json}"
-				user = Locator.new "users", "core", ResourceType::Actor
-				content = Content.new 
-				entry = Entry.new Locator.new(request.space, record.subpath, record.resource_type, record.uuid), content
+        puts "Creating record #{record.uuid}"
+        record.uuid = UUID.random if record.uuid.nil?
+        record.timestamp = Time.local if record.timestamp.nil?
+        owner = Locator.new request.space, "members/core", ResourceType::Actor, UUID.random
+        content = Content.new owner
+        content.timestamp = record.timestamp
+        content.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
+        content.location = "embedded"
+        content.content_type = "text"
+        content.payload = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
+        tags = record.properties.delete "tags"
+        if tags
+          tags.as_a.each { |tag| content.tags << tag.as_s }
+        end
+
+        # TBD check that record.properties is empty
+        locator = Locator.new request.space, record.subpath, record.resource_type, record.uuid
+        entry = Entry.new locator, content
         entry.save # "#{record.uuid.to_s}.json"
-				response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{entry.locator.path}/#{entry.locator.json_name}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
+        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{entry.locator.path}/#{entry.locator.json_name}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
         puts "Exception"
         pp ex.backtrace?
@@ -66,9 +69,9 @@ def process_request(request : Request) : Response
   when RequestType::Update
     request.records.each do |record|
       begin
-        locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+        locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
         entry = Entry.new locator
-        entry.meta.properties.merge record.properties
+        # TBD FIXME entry.properties = entry.properties.as_a + record.properties.as_a
         entry.save # record.uuid.to_s
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
@@ -78,7 +81,7 @@ def process_request(request : Request) : Response
   when RequestType::Delete
     request.records.each do |record|
       begin
-        locator = Locator.from_json({uuid: record.uuid, space: request.space, subpath: record.subpath, resource_type: record.type}.to_json)
+        locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
         Entry.delete locator
         response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
       rescue ex
@@ -91,7 +94,8 @@ def process_request(request : Request) : Response
     raise "Actor UUID is missing" if actor.nil?
     raise "Query is missing" if query.nil?
 
-    entry = Entry.new request.space, query.subpath, ResourceType::Folder
+    locator = Locator.new request.space, query.subpath, ResourceType::Folder
+    entry = Entry.new locator
     resources = [] of Locator
 
     # case request.scope
@@ -102,22 +106,19 @@ def process_request(request : Request) : Response
 
     count = 0
     resources.each do |one|
-			record = Record.new(one.resource_type, one.subpath, one.uuid)
+      record = Record.new(one.resource_type, one.subpath, one.uuid)
       entry = Entry.new one
-      #puts entry.meta.to_pretty_json2
-			record.properties["uuid"] = entry.locator.uuid.to_s
-      record.properties["from"] = entry.meta.properties["from"].to_s
-      record.properties["to"] = entry.meta.properties["to"]
-			record.properties["title"] = entry.meta.title.to_s if !entry.meta.title.nil?
-			record.properties["body"] = entry.meta.body.to_s
+      # puts entry.meta.to_pretty_json2
+      record.properties["uuid"] = ::JSON::Any.new entry.locator.uuid.to_s
+      list, _ = entry.properties
+      record.properties.merge list
+      # record.properties["from"] = ::JSON::Any.new entry.from.to_s
+      # record.properties["to"] = entry.to
+      # record.properties["title"] = ::JSON::Any.new entry.title.to_s if !entry.title.nil?
+      # record.properties["body"] = entry.json_payload
 
-			tags = [] of AnyBasic
-			entry.meta.tags.each do |tag|
-				tags << tag
-			end
-			record.properties["tags"] = tags
-      #record.timestamp = entry.meta.timestamp
-      #record.properties["subpath"] = subpath
+      # record.timestamp = entry.meta.timestamp
+      # record.properties["subpath"] = subpath
       response.records << record
       count += 1
     end
@@ -143,7 +144,7 @@ post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
   begin
     raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
-		puts "processing new api call ... #{ctx.request.body.to_s}"
+    puts "processing new api call ... #{ctx.request.body.to_s}"
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex

@@ -22,5 +22,5 @@ require "./models"
 # puts entry.meta.to_pretty_json2
 # entry.save
 
-#list = Edraj::Entry.resources "maqola", "messages/teams/core/general", [Edraj::ResourceType::Message]
-#pp list
+# list = Edraj::Entry.resources "maqola", "messages/teams/core/general", [Edraj::ResourceType::Message]
+# pp list
