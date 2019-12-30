@@ -2,8 +2,8 @@ require "json"
 require "uuid"
 require "uuid/json"
 
-alias AnyBasic = String | Int64 | Float64 | Bool
-alias AnyComplex = AnyBasic | Array(AnyBasic) | Hash(String, AnyBasic)
+#alias AnyBasic = String | Int64 | Float64 | Bool
+#alias AnyComplex = AnyBasic | Array(AnyBasic) | Hash(String, AnyBasic)
 
 class Object
   def to_pretty_json2

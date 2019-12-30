@@ -52,7 +52,7 @@ module Edraj
     property commit : String      # Git commit hash
     property result : String      # How did it conclude?
     property result_type : ResultType
-    property properties : Hash(String, AnyComplex)
+    property properties : Hash(String, ::JSON::Any)
   end
 
   # Empty UUID "00000000-0000-4000-0000-000000000000"
@@ -63,13 +63,14 @@ module Edraj
     property resource_type : ResourceType
     property space : String
     property subpath : String
+		property host : String?
     property uri : String? # Remote reference of the resource
 
     def initialize(@space, @subpath, @resource_type, @uuid = nil)
     end
 
     def json_name
-      "#{uuid.to_s}.meta.json"
+      "#{@uuid.to_s}.meta.json"
     end
 
     def path # Absolute local path
@@ -130,6 +131,16 @@ module Edraj
     end
 
     def initialize(@owner)
+    end
+
+    def update(list : Hash(String, ::JSON::Any))
+      @title = list["title"].as_s if list.has_key? "title"
+      @payload = list["body"] if list.has_key? "body"
+      if list.has_key? "tags"
+        list["tags"].as_a.each do |tag|
+          @tags << tag.as_s unless @tags.includes? tag.as_s
+        end
+      end
     end
 
     def properties(fields = {} of String => Bool, includes = [] of ResourceType)
@@ -374,17 +385,80 @@ module Edraj
     MediaType::Database => Set{"sqlite3"},
   }
 
-  #  class Media < Content
-  #    property bytesize : Int64
-  #    property checksum : String
-  #    property uri : String # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
-  #    property filename : String
-  #    property media_type : MediaType
-  #    property subtype : String
-  #    property encoding : EncodingType
-  #		def initialize(@owner, @location, @content_type, @body, @timestamp)
-  #		end
-  #  end
+	class Address
+	end
+
+	enum ContactType
+		Mobile
+		Email
+		Landphone
+		SocialMedia
+	end
+	class ContactDetail
+    include JSON::Serializable
+		property type : ContactType
+		property handler : String # for social media full handler e.g. fb.com/kefahi or linkedin/in/kefahi
+	end
+
+	enum IdentityType
+		Device
+		Application
+		Browser
+		Bot
+		Human
+	end
+
+	@[Flags]
+	enum IdentityUsage
+		Sign
+		Issue
+		Encrypt
+		Authenticate
+		Certify
+	end
+
+	class Identity
+    include JSON::Serializable
+		property type : IdentityType
+		property privileges : IdentityUsage
+		property public_key : String
+	end
+
+	class Actor < Content
+		property shortname : String
+		property dob : String?
+		property displayname : String
+		property contact_details = [] of ContactDetail
+		property about : String?
+		property identities = [] of Identity
+		def initialize (@owner, @shortname, @displayname)
+		end
+	end
+
+	class Biography < Content
+	end
+
+  class Media < Content
+    property bytesize : Int64
+    property checksum : String
+    property uri : String? # scheme:[//[user:pass@]host[:port]][/]path[?query][#fragment]
+    property filename : String
+    property content_type : String
+
+    # property media_type : MediaType
+    # property subtype : String
+    # property encoding : EncodingType::None
+
+    def initialize(@owner, space, subpath, filename, uri = nil)
+      path = Edraj.settings.data_path / "spaces" / space / subpath / filename
+      raise "File doesn't exist #{subpath}/#{filename}" if (!File.exists?(path) || !File.readable?(path))
+			@content_type = `file -Ebi #{path}`.strip
+      @bytesize = `du --bytes #{path} | cut -f 1 `.to_i64
+			@checksum = `sha512sum #{path} | cut -f 1 -d ' '`.strip
+      # FIXME read timestamp from file
+      @filename = filename
+    end
+  end
 
   class Record
     include JSON::Serializable
@@ -456,9 +530,9 @@ module Edraj
     property status : ResultType
     property code : Int64?
     # property message : String?
-    property properties : Hash(String, AnyBasic)
+    property properties : Hash(String, JSON::Any) 
 
-    def initialize(@status, @properties = Hash(String, AnyBasic).new)
+    def initialize(@status, @properties = Hash(String, JSON::Any).new)
     end
   end
 

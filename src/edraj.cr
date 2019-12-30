@@ -59,11 +59,11 @@ def process_request(request : Request) : Response
         locator = Locator.new request.space, record.subpath, record.resource_type, record.uuid
         entry = Entry.new locator, content
         entry.save # "#{record.uuid.to_s}.json"
-        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{entry.locator.path}/#{entry.locator.json_name}", "uuid" => "#{record.uuid.to_s}"} of String => AnyBasic
+				response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{entry.locator.path}/#{entry.locator.json_name}"), "uuid" => JSON::Any.new("#{record.uuid.to_s}")} of String => JSON::Any
       rescue ex
         puts "Exception"
         pp ex.backtrace?
-        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
+				response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any
       end
     end
   when RequestType::Update
@@ -71,11 +71,11 @@ def process_request(request : Request) : Response
       begin
         locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
         entry = Entry.new locator
-        # TBD FIXME entry.properties = entry.properties.as_a + record.properties.as_a
+        entry.update record.properties
         entry.save # record.uuid.to_s
-        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
+				response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}")} of String => JSON::Any
       rescue ex
-        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
+				response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any
       end
     end
   when RequestType::Delete
@@ -83,10 +83,9 @@ def process_request(request : Request) : Response
       begin
         locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
         Entry.delete locator
-        response.results << Result.new ResultType::Success, {"message" => "#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}"} of String => AnyBasic
+				response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}")} of String => JSON::Any
       rescue ex
-        response.results << Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic
-      end
+				response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any end
     end
   when RequestType::Query
     actor = request.actor
@@ -122,7 +121,7 @@ def process_request(request : Request) : Response
       response.records << record
       count += 1
     end
-    response.results << Result.new ResultType::Success, {"returned" => response.records.size.to_i64, "total" => response.records.size.to_i64} of String => AnyBasic
+		response.results << Result.new ResultType::Success, {"returned" => JSON::Any.new(response.records.size.to_i64), "total" => JSON::Any.new(response.records.size.to_i64)} of String => JSON::Any
   when RequestType::Login
     response = Response.new
     actor = request.actor
@@ -131,7 +130,7 @@ def process_request(request : Request) : Response
     token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
     # record = Record.new(ResourceType::Token, actor, "/actors/kefah")
     result = Result.new ResultType::Success
-    result.properties["token"] = token.to_s
+		result.properties["token"] = JSON::Any.new token.to_s
     response.results << result
     return response
   when RequestType::Logout
@@ -148,7 +147,7 @@ post "/api/" do |ctx|
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
-    {records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2
+		{records: [] of String, results: [Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any]}.to_pretty_json2
   end
 end
 
@@ -205,7 +204,7 @@ post "/media/*subpath" do |ctx|
     process_request(request).to_pretty_json2
   rescue ex
     pp ex
-    {records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2
+    {records: [] of String, results: [Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any]}.to_pretty_json2
   end
 end
 
@@ -222,7 +221,7 @@ ws "/websocket" do |socket, context|
       request = Request.from_json message.not_nil!
       socket.send process_request(request).to_pretty_json2
     rescue ex
-      socket.send({records: [] of String, results: [Result.new ResultType::Failure, {"message" => ex.to_s} of String => AnyBasic]}.to_pretty_json2)
+			socket.send({records: [] of String, results: [Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any]}.to_pretty_json2)
     end
   end
 
