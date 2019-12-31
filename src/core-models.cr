@@ -52,7 +52,7 @@ module Edraj
     end
 
     def json_name
-      "#{@uuid.to_s}.meta.json"
+			"#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
     end
 
     def path # Absolute local path
@@ -157,7 +157,11 @@ module Edraj
     property content : Collection | Content | Subscription | Message | Contact | Folder | Reaction | Reply
 
     # New / Empty
-    def initialize(@locator, @content)
+    def initialize(@locator, @content, *args)
+			case @locator.resource_type
+			when ResourceType::Media
+
+			end
     end
 
     # Load existing

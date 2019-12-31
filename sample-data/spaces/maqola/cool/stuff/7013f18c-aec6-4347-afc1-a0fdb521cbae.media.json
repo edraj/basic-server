@@ -1,13 +1,19 @@
 {
+  "location": "embedded",
   "timestamp": "2019-12-19T00:53:36Z",
-  "tags": [],
-  "properties": {
-    "bytesize": 3022.0,
-    "checksum": "041d98179a9017004c204537ac9d5107474d6cdc5cbb39c6bb647231d9da3d4a",
-    "uri": "string",
-    "media_type": "picture",
-    "subtype": "png",
-    "filename": "canvas.png",
-    "encoding": "none"
-  }
+  "payload": null,
+  "content_type": "image/png; charset=binary",
+  "owner": {
+    "uuid": "832184ed-70d1-4d5b-910b-0f643e105507",
+    "resource_type": "Actor",
+    "space": "maqola",
+    "subpath": "members/core"
+  },
+  "tags": [
+    "fun",
+    "personal"
+  ],
+  "bytesize": 3022,
+  "checksum": "d80a12b899c040b1c46556a5291d6ff99c2265c09ada6c771f3360783a79508b34cb14011c26866edeb9c75eb6ef9022b0412a7f30c8ea56f892a03be804291f",
+  "filename": "canvas.png"
 }

@@ -6,7 +6,7 @@
 	"scope": "base",
 	"records": [
 		{ 
-			"type": "media",
+			"resource_type": "media",
 			"uuid": "7013f18c-aec6-4347-afc1-a0fdb521cbae",
 			"subpath": "/cool/stuff/",
 			"timestamp": "2019-12-19T00:53:36.516916000Z",
@@ -17,7 +17,8 @@
 				"media_type":"picture",
 				"subtype": "png",
 				"filename": "canvas.png",
-				"encoding": "none"
+				"encoding": "none",
+				"tags": ["fun", "personal"]
 			}
 		}
 	]

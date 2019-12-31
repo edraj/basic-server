@@ -45,16 +45,20 @@ def process_request(request : Request) : Response
         record.uuid = UUID.random if record.uuid.nil?
         record.timestamp = Time.local if record.timestamp.nil?
         owner = Locator.new request.space, "members/core", ResourceType::Actor, UUID.random
-        content = Content.new owner
+				content : Content
+				case record.resource_type
+				when ResourceType::Media
+					content = Media.new owner, request.space, record.subpath, record.properties["filename"].as_s
+				else
+					content = Content.new owner
+				end
         content.timestamp = record.timestamp
         content.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
         content.location = "embedded"
-        content.content_type = "text"
+				content.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
         content.payload = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
         tags = record.properties.delete "tags"
-        if tags
-          tags.as_a.each { |tag| content.tags << tag.as_s }
-        end
+        tags.as_a.each { |tag| content.tags << tag.as_s } if tags
 
         # TBD check that record.properties is empty
         locator = Locator.new request.space, record.subpath, record.resource_type, record.uuid
@@ -62,9 +66,9 @@ def process_request(request : Request) : Response
         entry.save # "#{record.uuid.to_s}.json"
         response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{entry.locator.path}/#{entry.locator.json_name}"), "uuid" => JSON::Any.new("#{record.uuid.to_s}")} of String => JSON::Any
       rescue ex
-        puts "Exception"
-        pp ex.backtrace?
-        response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any
+        #puts "Exception"
+        #pp ex.backtrace?
+				response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
       end
     end
   when RequestType::Update
@@ -201,6 +205,7 @@ post "/media/*subpath" do |ctx|
     Dir.mkdir_p path.to_s
     puts "Copying file from #{temp_file.path} to #{path.to_s}"
     FileUtils.cp temp_file.path, "#{path.to_s}#{filename}"
+		request.records[0].properties["content_type"] = JSON::Any.new `file -Ebi #{path.to_s}#{filename}`.strip
     temp_file.delete
 
     process_request(request).to_pretty_json2
