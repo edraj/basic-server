@@ -8,7 +8,6 @@ require "ohm"
 
 module Edraj
   enum ResourceType
-    # Respective classes and json-schema exist
     Actor
     Notification
     Invitation
@@ -21,8 +20,6 @@ module Edraj
     Media
     Signature
     Relationship
-
-    # No classes, only json-schema
     Folder  # Folder "only"
     Contact # Person or Organization
     Profile
@@ -34,6 +31,8 @@ module Edraj
     Location # Aka Address
     Page
     Block
+		Product
+		Organization
     # Other
   end
 
@@ -96,6 +95,7 @@ module Edraj
     property response_to : Locator?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
+    property attachments = Array(Content).new
 
     def json_payload : JSON::Any
       return @payload if @location.starts_with? "embedded"
@@ -149,12 +149,11 @@ module Edraj
   #  end
 
   class Collection < Content
-    property attachments = Array(Content).new
   end
 
   class Entry
     property locator : Locator
-    property content : Collection | Content | Subscription | Message | Contact | Folder | Reaction | Reply
+    property content : Media | Biography | Actor | Contact | Folder | Collection | Reaction | Reply | Subscription | Message | Content
 
     # New / Empty
     def initialize(@locator, @content, *args)
@@ -191,12 +190,12 @@ module Edraj
     end
 
     # One-level meta-json children resources of type resource_type
-    def resources(resource_types : Array(ResourceType)) : Array(Locator)
+		def self.resources(space, subpath, resource_types : Array(ResourceType)) : Array(Locator)
       list = [] of Locator
       resource_types.each do |resource_type|
         extension = "#{resource_type.to_s.downcase}.json"
-        Dir.glob("#{@locator.path}/*.#{extension}") do |one|
-          list << Locator.new @locator.space, @locator.subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
+        Dir.glob("#{Edraj.settings.data_path / "spaces" / @space / @subpath}/*.#{extension}") do |one|
+          list << Locator.new space, subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
         end
       end
 
@@ -327,7 +326,7 @@ module Edraj
     property to : Array(UUID)
     property thread_id : UUID
 
-    def initialize(@owner, @location, @content_type, @body, @timestamp, @from, @to, @thread_id)
+    def initialize(@owner, @location, @from, @to, @thread_id)
     end
 
     def properties(fields = {} of String => Bool, includes = [] of ResourceType)

@@ -4,7 +4,7 @@
   "payload": null,
   "content_type": "image/png; charset=binary",
   "owner": {
-    "uuid": "832184ed-70d1-4d5b-910b-0f643e105507",
+    "uuid": "73939c5a-4337-4ad9-b711-768d6e88ee63",
     "resource_type": "Actor",
     "space": "maqola",
     "subpath": "members/core"
@@ -13,6 +13,7 @@
     "fun",
     "personal"
   ],
+  "attachments": [],
   "bytesize": 3022,
   "checksum": "d80a12b899c040b1c46556a5291d6ff99c2265c09ada6c771f3360783a79508b34cb14011c26866edeb9c75eb6ef9022b0412a7f30c8ea56f892a03be804291f",
   "filename": "canvas.png"

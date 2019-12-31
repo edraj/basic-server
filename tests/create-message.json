@@ -6,7 +6,7 @@
 	"scope": "base",
 	"records": [
 		{ 
-			"type": "message",
+			"resource_type": "message",
 			"uuid": "71988093-1f51-451b-8981-83cb382285e8",
 			"subpath": "messages/teams/core/general",
 			"timestamp": "2019-12-19T00:53:36.516916000Z",

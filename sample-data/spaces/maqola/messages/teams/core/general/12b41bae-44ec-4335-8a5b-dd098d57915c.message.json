@@ -3,10 +3,14 @@
 	"tags": ["personal", "sports"],
 	"title": "upcoming events",
 	"body":"Hello world",
-	"properties": {
-		"parent_uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
-		"from":"12b41bae-44ec-4335-8a5b-dd098d57915c",
-		"to": ["12b41bae-44ec-4335-8a5b-dd098d57915c"],
-		"thread_id": "12b41bae-44ec-4335-8a5b-dd098d57915c"
-	}
+  "owner": {
+    "uuid": "7617c4ca-1ab9-4883-92d2-e2c81664c64d",
+    "resource_type": "Actor",
+    "space": "maqola",
+    "subpath": "members/core"
+  },
+	"parent_uuid":"12b41bae-44ec-4335-8a5b-dd098d57915c",
+	"from":"12b41bae-44ec-4335-8a5b-dd098d57915c",
+	"to": ["12b41bae-44ec-4335-8a5b-dd098d57915c"],
+	"thread_id": "12b41bae-44ec-4335-8a5b-dd098d57915c"
 }
