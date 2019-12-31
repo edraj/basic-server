@@ -3,6 +3,7 @@ require "uuid"
 require "uuid/json"
 require "./exts"
 require "./config"
+require "./mime"
 require "ohm"
 
 module Edraj
@@ -36,25 +37,6 @@ module Edraj
     # Other
   end
 
-  enum ScopeType
-    Base
-    Onelevel
-    Subtree
-  end
-
-  class Notification
-    include JSON::Serializable
-    property actor : Locator      # Who did it?
-    property timestamp : Time     # When start?
-    property action : RequestType # What was the nature of the action
-    property resource : Locator   # Where was it applied
-    property duration : Int32     # How long did it take in milliseconds
-    property commit : String      # Git commit hash
-    property result : String      # How did it conclude?
-    property result_type : ResultType
-    property properties : Hash(String, ::JSON::Any)
-  end
-
   # Empty UUID "00000000-0000-4000-0000-000000000000"
 
   class Locator
@@ -63,7 +45,7 @@ module Edraj
     property resource_type : ResourceType
     property space : String
     property subpath : String
-		property host : String?
+    property host : String?
     property uri : String? # Remote reference of the resource
 
     def initialize(@space, @subpath, @resource_type, @uuid = nil)
@@ -367,76 +349,60 @@ module Edraj
     Base64
   end
 
-  enum MediaType
-    Audio
-    Video
-    Picture
-    Document
-    Database
-    Data
+  class Address
   end
 
-  MEDIA_SUBTYPES = {
-    MediaType::Audio    => Set{"mp3", "ogg", "wav"},
-    MediaType::Video    => Set{"mp4", "webm"},
-    MediaType::Document => Set{"pdf", "word"},
-    MediaType::Picture  => Set{"png", "jpeg", "gif"},
-    MediaType::Data     => Set{"json", "yaml", "xml", "csv"},
-    MediaType::Database => Set{"sqlite3"},
-  }
+  enum ContactType
+    Mobile
+    Email
+    Landphone
+    SocialMedia
+  end
 
-	class Address
-	end
-
-	enum ContactType
-		Mobile
-		Email
-		Landphone
-		SocialMedia
-	end
-	class ContactDetail
+  class ContactDetail
     include JSON::Serializable
-		property type : ContactType
-		property handler : String # for social media full handler e.g. fb.com/kefahi or linkedin/in/kefahi
-	end
+    property type : ContactType
+    property handler : String # for social media full handler e.g. fb.com/kefahi or linkedin/in/kefahi
+  end
 
-	enum IdentityType
-		Device
-		Application
-		Browser
-		Bot
-		Human
-	end
+  enum IdentityType
+    Device
+    Application
+    Browser
+    Bot
+    Human
+  end
 
-	@[Flags]
-	enum IdentityUsage
-		Sign
-		Issue
-		Encrypt
-		Authenticate
-		Certify
-	end
+  @[Flags]
+  enum IdentityUsage
+    Sign
+    Issue
+    Encrypt
+    Authenticate
+    Certify
+  end
 
-	class Identity
+  class Identity
     include JSON::Serializable
-		property type : IdentityType
-		property privileges : IdentityUsage
-		property public_key : String
-	end
+    property type : IdentityType
+    property privileges : IdentityUsage
+    property public_key : String
+  end
 
-	class Actor < Content
-		property shortname : String
-		property dob : String?
-		property displayname : String
-		property contact_details = [] of ContactDetail
-		property about : String?
-		property identities = [] of Identity
-		def initialize (@owner, @shortname, @displayname)
-		end
-	end
+  class Actor < Content
+    property shortname : String
+    property dob : String?
+    property displayname : String
+    property contact_details = [] of ContactDetail
+    property about : String?
+    property identities = [] of Identity
 
-	class Biography < Content
-	end
+    def initialize(@owner, @shortname, @displayname)
+    end
+  end
+
+  class Biography < Content
+  end
 
   class Media < Content
     property bytesize : Int64
@@ -448,103 +414,19 @@ module Edraj
     # property media_type : MediaType
     # property subtype : String
     # property encoding : EncodingType::None
+    def media_type
+      MEDIA_TYPE[@content_type]
+    end
 
     def initialize(@owner, space, subpath, filename, uri = nil)
       path = Edraj.settings.data_path / "spaces" / space / subpath / filename
       raise "File doesn't exist #{subpath}/#{filename}" if (!File.exists?(path) || !File.readable?(path))
-			@content_type = `file -Ebi #{path}`.strip
+      @content_type = `file -Ebi #{path}`.strip
+      @content_type.sub "; charset=us-ascii", "; charset=utf-8"
       @bytesize = `du --bytes #{path} | cut -f 1 `.to_i64
-			@checksum = `sha512sum #{path} | cut -f 1 -d ' '`.strip
+      @checksum = `sha512sum #{path} | cut -f 1 -d ' '`.strip
       # FIXME read timestamp from file
       @filename = filename
-    end
-  end
-
-  class Record
-    include JSON::Serializable
-    property timestamp : Time = Time.local
-    property resource_type : ResourceType
-    property uuid : UUID?
-    property subpath : String
-    property properties = Hash(String, ::JSON::Any).new
-    property relationships : Hash(String, Record)?
-    property op_id : String?
-
-    def initialize(@resource_type, @subpath, @uuid = nil)
-    end
-  end
-
-  enum OrderType
-    Natural
-    Random
-  end
-
-  class Query
-    include JSON::Serializable
-    property subpath : String
-    property resources : Array(UUID)?
-    property resource_types : Array(ResourceType)
-    property search : String?
-    property from_date : Time?
-    property to_date : Time?
-    property excluded_fields : Array(String)?
-    property included_fields : Array(String)?
-    property sort = Array(String).new
-    property order = Edraj::OrderType::Natural
-    property limit = 10
-    property offset = 0
-    property suggested = false
-    property tags = Array(String).new
-  end
-
-  enum RequestType
-    Create
-    Update
-    Delete
-    Query
-    Login
-    Logout
-  end
-
-  class Request
-    include JSON::Serializable
-    property type : RequestType
-    property space : String
-    property actor : UUID
-    property token : String
-    property scope : ScopeType
-    property tracking_id : String?
-    property query : Query?
-    property records : Array(Record)
-  end
-
-  enum ResultType
-    Success
-    Inprogress # aka Processing
-    Partial
-    Failure
-  end
-
-  class Result
-    include JSON::Serializable
-    property status : ResultType
-    property code : Int64?
-    # property message : String?
-    property properties : Hash(String, JSON::Any) 
-
-    def initialize(@status, @properties = Hash(String, JSON::Any).new)
-    end
-  end
-
-  class Response
-    include JSON::Serializable
-    property tracking_id : String?
-    property records = Array(Record).new
-    property included : Array(Record)?
-    property suggested : Array(Record)?
-    property results = Array(Result).new
-
-    def initialize
     end
   end
 end

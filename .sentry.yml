@@ -17,7 +17,7 @@ run_ameba: true
 
 # The command used to compile the application. Setting this option to `nil` or
 # an empty string will act like specifying `--no-build` on the command line.
-build: crystal build ./src/edraj.cr --error-trace -o ./bin/edraj
+build: crystal build ./src/api.cr --error-trace -o ./bin/edraj
 
 # Any additional arguments to pass to the build command. Build args may only
 # be given if the build command is a single argument.
