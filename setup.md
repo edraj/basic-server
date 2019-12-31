@@ -22,7 +22,7 @@ name = Crystal
 baseurl = https://dist.crystal-lang.org/rpm/
 END
 
-dnf install -y crystal redis gmp-static
+dnf install -y crystal redis gmp-static libyaml-devel openssl-devel
 ```
 
 ## Tests
@@ -45,6 +45,6 @@ shards
 ./check.sh
 
 # Build and run edraj binary
-./run.sh [arguments] 
+./run.sh [arguments]
 ```
 
