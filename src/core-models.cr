@@ -31,8 +31,8 @@ module Edraj
     Location # Aka Address
     Page
     Block
-		Product
-		Organization
+    Product
+    Organization
     # Other
   end
 
@@ -51,7 +51,7 @@ module Edraj
     end
 
     def json_name
-			"#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
+      "#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
     end
 
     def path # Absolute local path
@@ -92,7 +92,7 @@ module Edraj
     property actor : Locator?  # Actor who caused this payload to be created: user, app (iot) ...
     property owner : Locator   # Owner of the payload : user, group ...
     property author : Locator? # Original author of the content
-    property response_to : Locator?
+    property response_to : UUID?
     property related_to : Array(Relationship)?
     property signatures : Array(Signature)?
     property attachments = Array(Content).new
@@ -157,10 +157,9 @@ module Edraj
 
     # New / Empty
     def initialize(@locator, @content, *args)
-			case @locator.resource_type
-			when ResourceType::Media
-
-			end
+      case @locator.resource_type
+      when ResourceType::Media
+      end
     end
 
     # Load existing
@@ -190,7 +189,7 @@ module Edraj
     end
 
     # One-level meta-json children resources of type resource_type
-		def self.resources(space, subpath, resource_types : Array(ResourceType)) : Array(Locator)
+    def self.resources(space, subpath, resource_types : Array(ResourceType)) : Array(Locator)
       list = [] of Locator
       resource_types.each do |resource_type|
         extension = "#{resource_type.to_s.downcase}.json"

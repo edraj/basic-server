@@ -45,28 +45,31 @@ def process_request(request : Request) : Response
         record.uuid = UUID.random if record.uuid.nil?
         record.timestamp = Time.local if record.timestamp.nil?
         owner = Locator.new request.space, "members/core", ResourceType::Actor, UUID.random
-				#owner = UUID.random
-				content : Content
-				case record.resource_type
-				when ResourceType::Media
-					content = Media.new owner, request.space, record.subpath, record.properties["filename"].as_s
-				when ResourceType::Message
-					from = UUID.new record.properties.delete("from").to_s # if record.properties.has_key? "from"
-					thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
-					_to = record.properties.delete "to" 
-					to = [] of UUID
-					_to.as_a.each { |one| to << UUID.new one.as_s } if _to
-					content = Message.new owner, "embedded", from, to, thread_id
-				else
-					content = Content.new owner
-				end
+        # owner = UUID.random
+        content : Content
+        case record.resource_type
+        when ResourceType::Media
+          content = Media.new owner, request.space, record.subpath, record.properties["filename"].as_s
+        when ResourceType::Message
+          from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
+          thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
+          _to = record.properties.delete "to"
+          to = [] of UUID
+          _to.as_a.each { |one| to << UUID.new one.as_s } if _to
+          content = Message.new owner, "embedded", from, to, thread_id
+        else
+          content = Content.new owner
+        end
         content.timestamp = record.timestamp
         content.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
         content.location = "embedded"
-				content.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
+        content.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
         content.payload = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
+        content.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
         tags = record.properties.delete "tags"
         tags.as_a.each { |tag| content.tags << tag.as_s } if tags
+
+				pp record.properties if record.properties.size > 0
 
         # TBD check that record.properties is empty
         locator = Locator.new request.space, record.subpath, record.resource_type, record.uuid
@@ -74,9 +77,9 @@ def process_request(request : Request) : Response
         entry.save # "#{record.uuid.to_s}.json"
         response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{entry.locator.path}/#{entry.locator.json_name}"), "uuid" => JSON::Any.new("#{record.uuid.to_s}")} of String => JSON::Any
       rescue ex
-        #puts "Exception"
-        #pp ex.backtrace?
-				response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
+        # puts "Exception"
+        # pp ex.backtrace?
+        response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
       end
     end
   when RequestType::Update
@@ -107,19 +110,19 @@ def process_request(request : Request) : Response
     raise "Actor UUID is missing" if actor.nil?
     raise "Query is missing" if query.nil?
 
-    locator = Locator.new request.space, query.subpath, ResourceType::Folder
+    # locator = Locator.new request.space, query.subpath, ResourceType::Folder
     # entry = Entry.new locator
     resources = [] of Locator
 
     # case request.scope
     # when ScopeType::Base
     # when ScopeType::Onelevel
-		resources.concat Entry.resources request.space, query.subpath, query.resource_types
+    resources.concat Entry.resources request.space, query.subpath, query.resource_types
     # end
 
     count = 0
     resources.each do |one|
-			puts "Retrieving content #{one.uuid.to_s}"
+      puts "Retrieving content #{one.uuid.to_s}"
       record = Record.new(one.resource_type, one.subpath, one.uuid)
       entry = Entry.new one
       # puts entry.meta.to_pretty_json2
@@ -158,7 +161,6 @@ post "/api/" do |ctx|
   ctx.response.content_type = APPLICATION_JSON
   begin
     raise "Bad content-type" unless ctx.request.headers["Content-Type"] == APPLICATION_JSON
-    puts "processing new api call ... #{ctx.request.body.to_s}"
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
@@ -214,7 +216,7 @@ post "/media/*subpath" do |ctx|
     Dir.mkdir_p path.to_s
     puts "Copying file from #{temp_file.path} to #{path.to_s}"
     FileUtils.cp temp_file.path, "#{path.to_s}#{filename}"
-		request.records[0].properties["content_type"] = JSON::Any.new `file -Ebi #{path.to_s}#{filename}`.strip
+    request.records[0].properties["content_type"] = JSON::Any.new `file -Ebi #{path.to_s}#{filename}`.strip
     temp_file.delete
 
     process_request(request).to_pretty_json2

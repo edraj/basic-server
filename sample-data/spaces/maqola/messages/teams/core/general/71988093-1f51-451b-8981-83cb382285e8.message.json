@@ -5,11 +5,12 @@
   "payload": "It has been sometime\nHow are you doing?\nregards",
   "content_type": "none",
   "owner": {
-    "uuid": "a67ebe6f-eab3-4c8c-8872-9a5f109b6ceb",
+    "uuid": "e96b5825-7fbd-435e-b2b1-e7db577ff2c0",
     "resource_type": "Actor",
     "space": "maqola",
     "subpath": "members/core"
   },
+  "response_to": "050742e4-44f5-4d8b-bce4-3aec073e4797",
   "tags": [
     "personal",
     "family"
