@@ -1,7 +1,6 @@
 require "./resource"
 
 module Edraj
-
   enum MainType
     Actor
     Content
@@ -15,7 +14,7 @@ module Edraj
   enum MessageType
     SimpleMessage  # Pure text
     RichMessage    # Rich-text body with attachments
-		Correspondance # Subject, Rich-text body with attachments.
+    Correspondance # Subject, Rich-text body with attachments.
   end
 
   enum ContentType
@@ -24,11 +23,11 @@ module Edraj
     Collection # Aka Collection
     Post       # aka article
     Message    # Short/plain message, Email correspondance
-    Task       # aka Todo item with basic workflow (status) 
+    Task       # aka Todo item with basic workflow (status)
     Term       # Term definition: Word, sub-phrase, translation ...etc
-    #Product
+    # Product
 
-    #Page
+    # Page
     # Block
     # Folder  # Folder "only"
     # Schema
@@ -36,13 +35,9 @@ module Edraj
     # Profile
   end
 
-
-  class Content < Resource
+  class Content < MetaFile
     property location : String = "none" # file://filepathname, embedded, uri://server..., none
-    property timestamp : Time = Time.local
-    property tags = Array(String).new
     property title : String? # subject / displayname
-    property description : String?
     property body : ::JSON::Any = ::JSON::Any.new nil # aka Body/Payload
     property content_type : String = "none"           # json+schema, media+subtype, folder, ...
     property content_encoding : String?
@@ -122,11 +117,12 @@ module Edraj
     property from : UUID
     property to : Array(UUID)
     property thread_id : UUID
+    property delivery_updates = [] of MessageDelivery
 
     def initialize(@owner, @location, @from, @to, @thread_id)
     end
 
-    def properties(fields = {} of String => Bool, includes = [] of ContentType)
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType)
       list, included = super(fields, includes)
       list["from"] = JSON::Any.new @from.to_s
       list["to"] = JSON.parse @to.to_json
@@ -134,7 +130,6 @@ module Edraj
       {list, included}
     end
   end
-
 
   class Biography < Content
     property shortname : String
@@ -153,5 +148,4 @@ module Edraj
     property contact_details = [] of ContactDetail
     property identities = [] of Identity
   end
-
 end

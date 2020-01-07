@@ -1,3 +1,5 @@
+require "./resource"
+
 module Edraj
   enum AttachmentType
     Reply # aka comment
@@ -18,17 +20,18 @@ module Edraj
     Organization
   end
 
-  class Attachment
-    include JSON::Serializable
+  # Additional content attached to the main content by an actor. The attachment is usually part of the main content's json file.
+  abstract class Attachment < Resource
     property uuid : UUID
     property timestamp : Time # When
     property actor : Locator  # Who
-  end
-
-  class Relationship < Attachment
-    property type : String
-    property properties = {} of String => JSON::Any
-    property related_to : Locator
+    # def update(list : Hash(String, ::JSON::Any))
+    # end
+    # def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
+    #	list = {} of String => JSON::Any
+    #	included = [] of Locator
+    #	{list, included}
+    # end
   end
 
   class Signature < Attachment
@@ -39,14 +42,6 @@ module Edraj
     property hash : String
   end
 
-  class Subscription < Attachment
-    property subpath = ""
-    property resource_types = [] of ContentType
-    property tags = [] of String
-
-    def initialize(@owner)
-    end
-  end
 
   enum ReactionType
     Agreed
@@ -80,8 +75,6 @@ module Edraj
     property status # New, Accepted, Rejected, Replied (commented)
   end
 
-  class Invitation < Attachment
-  end
 
   class Media < Attachment
     property bytesize : Int64
@@ -117,15 +110,6 @@ module Edraj
     Base64
   end
 
-  class Address < Attachment
-    property line : String
-    property zipcode : String
-    property city : String
-    property state : String
-    property countery : String
-    property geopoint : NamedTuple(long: Float64, lat: Float64)?
-  end
-
   enum ContactType
     Mobile
     Email
@@ -145,6 +129,7 @@ module Edraj
     Browser
     Bot
     Human
+    Group
   end
 
   @[Flags]
@@ -183,7 +168,18 @@ module Edraj
 
   class Identity < Attachment
     property type : IdentityType
-    property privileges : IdentityUsage
+    # FIXME property privileges : IdentityUsage
     property public_key : String
+  end
+
+  enum MessageDeliveryStatus
+    Delivered
+    Acknowledged # Acknowlding that the message was Recieved and read
+    Failed
+  end
+
+  class MessageDelivery < Attachment
+    property recipient : Locator
+    property status : MessageDeliveryStatus
   end
 end

@@ -8,6 +8,7 @@ require "colorize"
 require "./exts"
 require "./config"
 require "./service-models"
+require "./entry"
 require "file_utils"
 
 #  logger.debug "#{settings.host}:#{settings.port}".colorize.yellow
@@ -62,7 +63,7 @@ def process_request(request : Request) : Response
       raise "Actor UUID is missing" if actor.nil?
       data = {"actor" => actor.to_s, "iat" => Time.local.to_unix.to_s}
       token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
-      # record = Record.new(ContentType::Token, actor, "/actors/kefah")
+      # record = Record.new(ResourceType::Token, actor, "/actors/kefah")
       result = Result.new ResultType::Success
       result.properties["token"] = JSON::Any.new token.to_s
       response.results << result
