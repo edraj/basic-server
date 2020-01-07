@@ -168,7 +168,7 @@ module Edraj
     Degree
     Certificate
     Product     # Produce
-    Recognition # Award
+    Recognition # Award / Honors
   end
 
   class Accomplishment < Attachment

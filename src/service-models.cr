@@ -9,91 +9,6 @@ require "./content-models"
 require "ohm"
 
 module Edraj
-  # Empty UUID "00000000-0000-4000-0000-000000000000"
-  class Locator
-    include JSON::Serializable
-    property uuid : UUID?      # file is .{resource_type}.json
-    property type : RecordType #
-    property space : String
-    property subpath : String
-    property anchor : String?
-    property host : String?
-    property uri : String? # Remote reference of the resource
-
-    def initialize(@space, @subpath, @resource_type, @uuid = nil)
-    end
-
-    def json_name
-      "#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
-    end
-
-    def path # Absolute local path
-      Edraj.settings.data_path / "spaces" / @space / @subpath
-    end
-  end
-
-  # DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ContentType::Message}.to_json
-
-  #  class EntryMeta # Each entry has one exact meta file
-  #    property tags = Array(String).new
-  #		property files = Array(Content).new
-  #  end
-
-  enum RequestType
-    Create
-    Update
-    Delete
-    Query
-    Login
-    Logout
-  end
-
-  enum ResultType
-    Success
-    Inprogress # aka Processing
-    Partial
-    Failure
-  end
-
-  class Result
-    include JSON::Serializable
-    property status : ResultType
-    property code : Int64?
-    # property message : String?
-    property properties : Hash(String, JSON::Any)
-
-    def initialize(@status, @properties = Hash(String, JSON::Any).new)
-    end
-  end
-
-  enum OrderType
-    Natural
-    Random
-  end
-
-  class Query
-    include JSON::Serializable
-    property subpath : String
-    property resources : Array(UUID)?
-    property resource_types : Array(ContentType)
-    property search : String?
-    property from_date : Time?
-    property to_date : Time?
-    property excluded_fields : Array(String)?
-    property included_fields : Array(String)?
-    property sort = Array(String).new
-    property order = Edraj::OrderType::Natural
-    property limit = 10
-    property offset = 0
-    property suggested = false
-    property tags = Array(String).new
-  end
-
-  enum ScopeType
-    Base
-    Onelevel
-    Subtree
-  end
 
   enum ResourceType
     Post
@@ -122,11 +37,100 @@ module Edraj
     Organization
   end
 
+	#REQUEST_RESOURCE = { # {} of ReqeustType => [] of ResourceType
+	#	ResourceType::Post 
+	#}
+
+  # Empty UUID "00000000-0000-4000-0000-000000000000"
+  class Locator
+    include JSON::Serializable
+    property uuid : UUID?
+    property resource_type : ResourceType
+    property space : String
+    property subpath : String
+    property anchor : String?
+    property host : String?
+    property uri : String? # Remote reference of the resource
+
+    def initialize(@space, @subpath, @resource_type, @uuid = nil)
+    end
+
+    def json_name
+      "#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
+    end
+
+    def path # Absolute local path
+      Edraj.settings.data_path / "spaces" / @space / @subpath
+    end
+  end
+
+
+  # DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ContentType::Message}.to_json
+
+  #  class EntryMeta # Each entry has one exact meta file
+  #    property tags = Array(String).new
+  #		property files = Array(Content).new
+  #  end
+
+  enum RequestType
+    Create
+    Update
+    Delete
+		Send
+    Query
+    Login
+  end
+
+  enum ResultType
+    Success
+    Inprogress # aka Processing
+    Partial
+    Failure
+  end
+
+  class Result
+    include JSON::Serializable
+    property status : ResultType
+    property code : Int64?
+    property properties : Hash(String, JSON::Any)
+    def initialize(@status, @properties = Hash(String, JSON::Any).new)
+    end
+  end
+
+  enum OrderType
+    Natural
+    Random
+  end
+
+  class Query
+    include JSON::Serializable
+    property subpath : String
+    property resources : Array(UUID)?
+    property resource_types : Array(ResourceType)
+    property search : String?
+    property from_date : Time?
+    property to_date : Time?
+    property excluded_fields : Array(String)?
+    property included_fields : Array(String)?
+    property sort = Array(String).new
+    property order = Edraj::OrderType::Natural
+    property limit = 10
+    property offset = 0
+    property suggested = false
+    property tags = Array(String).new
+  end
+
+  enum ScopeType
+    Base
+    Onelevel
+    Subtree
+  end
+
+
   class Record
     include JSON::Serializable
     property timestamp : Time = Time.local
-    property type : Recordtype
-    # property attached_to : String? # File name
+    property resource_type : ResourceType
     property uuid : UUID?
     property subpath : String
     property properties = Hash(String, ::JSON::Any).new
@@ -206,11 +210,11 @@ module Edraj
     end
 
     # One-level meta-json children resources of type resource_type
-    def self.resources(space, subpath, resource_types : Array(ContentType)) : Array(Locator)
+    def self.resources(space, subpath, resource_types : Array(ResourceType)) : Array(Locator)
       list = [] of Locator
       resource_types.each do |resource_type|
         extension = "#{resource_type.to_s.downcase}.json"
-        Dir.glob("#{Edraj.settings.data_path / "spaces" / @space / @subpath}/*.#{extension}") do |one|
+        Dir.glob("#{Edraj.settings.data_path / "spaces" / space / subpath}/*.#{extension}") do |one|
           list << Locator.new space, subpath, resource_type, UUID.new(File.basename(one, ".#{extension}"))
         end
       end
@@ -284,7 +288,7 @@ module Edraj
     end
 
     # One-level meta-json children resources of type resource_type
-    def self.resources(space : String, subpath : String, resource_types : Array(ContentType)) : Array(Locator)
+    def self.resources(space : String, subpath : String, resource_types : Array(ResourceType)) : Array(Locator)
       list = [] of Locator
       path = Edraj.settings.data_path / "spaces" / space / subpath
       resource_types.each do |resource_type|
@@ -308,7 +312,7 @@ module Edraj
         puts "Creating record #{record.uuid}"
         record.uuid = UUID.random if record.uuid.nil?
         record.timestamp = Time.local if record.timestamp.nil?
-        owner = Locator.new space, "members/core", ContentType::Actor, UUID.random
+        owner = Locator.new space, "members/core", ResourceType::User, UUID.random
         # owner = UUID.random
         content : Content
         case record.resource_type
