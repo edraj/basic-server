@@ -174,7 +174,7 @@ module Edraj
 
   class Entry
     property locator : Locator
-    property content : Biography | Actor | Contact | Album | Message
+    property content : Actor | Content | Message
 
     # New / Empty
     def initialize(@locator, @content, *args)

@@ -1,14 +1,22 @@
 module Edraj
 
-	class Resource
+	abstract class Resource
+    include JSON::Serializable
 
-		property request_types = [] of RequestType
+    abstract def update(list : Hash(String, ::JSON::Any))
+    abstract def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
+		# abstract def supported_requests : Array(RequestType)
+		# abstract def process_request : { Array(Result), Array(Records)}
 
-		def process(request : Request) 
-			results = [] of Result
-			records = [] of Records
-			{results, records}
+		def type
+			self.class
 		end
+
+		#def process(request : Request) 
+		#	results = [] of Result
+		#	records = [] of Records
+		#	{results, records}
+		#end
 	end
 
   enum MainType
@@ -24,7 +32,7 @@ module Edraj
   enum MessageType
     SimpleMessage  # Pure text
     RichMessage    # Rich-text body with attachments
-    Correspondance #
+		Correspondance # Subject, Rich-text body with attachments.
   end
 
   enum ActorType
@@ -34,16 +42,16 @@ module Edraj
   end
 
   enum ContentType
-    Contact   # Person or Organization
-    Biography # Person or Organization
-    Album     # Aka Collection
-    Post      # aka article
-    Message
-    Task
-    Term # Term definition: Word, sub-phrase, translation ...etc
-    Product
+    Contact    # Person or Organization
+    Biography  # Person or Organization
+    Collection # Aka Collection
+    Post       # aka article
+    Message    # Short/plain message, Email correspondance
+    Task       # aka Todo item with basic workflow (status) 
+    Term       # Term definition: Word, sub-phrase, translation ...etc
+    #Product
 
-    Page
+    #Page
     # Block
     # Folder  # Folder "only"
     # Schema
@@ -51,8 +59,11 @@ module Edraj
     # Profile
   end
 
-  class Content
-    include JSON::Serializable
+	abstract class JsonFile < Resource
+		abstract def update
+  end
+
+  class Content < Resource
     property location : String = "none" # file://filepathname, embedded, uri://server..., none
     property timestamp : Time = Time.local
     property tags = Array(String).new
@@ -97,7 +108,7 @@ module Edraj
       end
     end
 
-    def properties(fields = {} of String => Bool, includes = [] of ContentType)
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType)
       list = {} of String => JSON::Any
       included = [] of Locator
       list["title"] = JSON::Any.new @title.to_s if @title && (!fields.has_key?("title") || fields.has_key?("title"))
@@ -127,13 +138,7 @@ module Edraj
     end
   end
 
-  # class Collection < Content
-  # end
-
-  # class Folder < Content
-  # end
-
-  class Album < Content
+  class Collection < Content
   end
 
   class Post < Content
@@ -188,9 +193,25 @@ module Edraj
     property identities = [] of Identity
   end
 
-  class Actor < Contact
+  class Actor < Resource
+    property displayname : String
+    property shortname : String
+    property identities = [] of Identity
     property invitations = [] of Invitation
     property subscriptions = [] of Subscription
+		property contact : Locator? # Pointer to the contact details of this actor.
+    def update(list : Hash(String, ::JSON::Any))
+			#case @contact
+			#when Contact
+			#	@contact.update list
+			#end
+		end
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
+			list = {} of String => JSON::Any
+			included = [] of Locator
+			{list, included}
+		end
+		forward_missing_to @contact
   end
 
   class User < Actor
