@@ -1,23 +1,6 @@
+require "./resource"
+
 module Edraj
-
-	abstract class Resource
-    include JSON::Serializable
-
-    abstract def update(list : Hash(String, ::JSON::Any))
-    abstract def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
-		# abstract def supported_requests : Array(RequestType)
-		# abstract def process_request : { Array(Result), Array(Records)}
-
-		def type
-			self.class
-		end
-
-		#def process(request : Request) 
-		#	results = [] of Result
-		#	records = [] of Records
-		#	{results, records}
-		#end
-	end
 
   enum MainType
     Actor
@@ -33,12 +16,6 @@ module Edraj
     SimpleMessage  # Pure text
     RichMessage    # Rich-text body with attachments
 		Correspondance # Subject, Rich-text body with attachments.
-  end
-
-  enum ActorType
-    User
-    Group
-    Bot
   end
 
   enum ContentType
@@ -59,9 +36,6 @@ module Edraj
     # Profile
   end
 
-	abstract class JsonFile < Resource
-		abstract def update
-  end
 
   class Content < Resource
     property location : String = "none" # file://filepathname, embedded, uri://server..., none
@@ -161,19 +135,6 @@ module Edraj
     end
   end
 
-  class Notification
-    # property actor : Locator      # Who did it?
-    # property timestamp : Time     # When start?
-    property action : RequestType    # What was the nature of the action
-    property resource : Locator      # Where was it applied
-    property duration : Int32        # How long did it take in milliseconds
-    property commit : String         # Associated git commit hash
-    property results : Array(Result) # How did it conclude?
-    # Content.body /body should be filled with any additional details pertaining to the specific notification (i.e. in an unstructured fashion).
-
-    def initialize(@owner, @action, @resource, @duration, @commit, @results)
-    end
-  end
 
   class Biography < Content
     property shortname : String
@@ -193,34 +154,4 @@ module Edraj
     property identities = [] of Identity
   end
 
-  class Actor < Resource
-    property displayname : String
-    property shortname : String
-    property identities = [] of Identity
-    property invitations = [] of Invitation
-    property subscriptions = [] of Subscription
-		property contact : Locator? # Pointer to the contact details of this actor.
-    def update(list : Hash(String, ::JSON::Any))
-			#case @contact
-			#when Contact
-			#	@contact.update list
-			#end
-		end
-    def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
-			list = {} of String => JSON::Any
-			included = [] of Locator
-			{list, included}
-		end
-		forward_missing_to @contact
-  end
-
-  class User < Actor
-  end
-
-  class Group < Actor
-    property members = [] of Actor
-  end
-
-  class Bot < Actor
-  end
 end

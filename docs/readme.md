@@ -2,7 +2,7 @@
 ## Main types
 
 Message:
-Notification <= Subscription
+Notification <= Subscription : When something changes in the system (create/update/delete)
 Actor: An account capable of executing actions
 Content: set of sharable information that is persisted onto a json file with an arbitrary number of resource and can be interacted with.
 Attachment: A data element in content: markdown, html, image ...etc

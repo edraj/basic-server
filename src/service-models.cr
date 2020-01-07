@@ -6,63 +6,16 @@ require "./config"
 require "./mime"
 require "./attachment-models"
 require "./content-models"
+require "./actor-models"
 require "ohm"
 
 module Edraj
 
-  enum ResourceType
-    Post
-    Collection
-    Biography
-    Contact
-    Task
-    Term
-    Message
-    Notification
-    User
-    Group
-    Media
-    Page
-    Block
-    Logic
-    Reply
-    Reaction
-    SuggestedModification
-    Share
-    Signature
-    Relationship
-    Subscription
-    Invitation
-    Address
-    Organization
-  end
 
 	#REQUEST_RESOURCE = { # {} of ReqeustType => [] of ResourceType
 	#	ResourceType::Post 
 	#}
 
-  # Empty UUID "00000000-0000-4000-0000-000000000000"
-  class Locator
-    include JSON::Serializable
-    property uuid : UUID?
-    property resource_type : ResourceType
-    property space : String
-    property subpath : String
-    property anchor : String?
-    property host : String?
-    property uri : String? # Remote reference of the resource
-
-    def initialize(@space, @subpath, @resource_type, @uuid = nil)
-    end
-
-    def json_name
-      "#{@uuid.to_s}.#{@resource_type.to_s.downcase}.json"
-    end
-
-    def path # Absolute local path
-      Edraj.settings.data_path / "spaces" / @space / @subpath
-    end
-  end
 
 
   # DUMMY_LOCATOR = {space: "", subpath: "", resource_type: Edraj::ContentType::Message}.to_json
