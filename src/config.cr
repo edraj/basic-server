@@ -37,6 +37,7 @@ module Edraj
     @[YAML::Field(converter: Path::StringConverter)]
     property run_path = Path.new "/tmp/edraj/"
     property jwt_secret : String
+    property spaces = [] of String
   end
 
   def self.load_config : Config
@@ -44,6 +45,7 @@ module Edraj
     _host = ""
     _run_path = ""
     _data_path = ""
+    _spaces = [] of String
 
     config_file = "./config.yml"
 
@@ -53,6 +55,7 @@ module Edraj
       parser.on("-l HOSTNAME", "--listen=HOSTNAME", "Interface to bind to. (default: localhost )") { |p| _host = p }
       parser.on("-r RUN_PATH", "--run-path=RUN_PATH", "The intermediate / caching runtime files path. (default: /tmp/edraj)") { |p| _run_path = p }
       parser.on("-d DATA_PATH", "--datapath=DATA_PATH", "Folder where all information is persisted. (default: ~/edraj)") { |p| _data_path = p }
+      parser.on("-s SPACES", "--spaces=SPACES_LIST", "Comma-separated list of approved spaces. (default: none)") { |p| _spaces = p.split(",") }
       parser.on("-c FILE", "--config=FILE", "Specifies a yaml file to load for configuration (default: 'config.yml')") { |p| config_file = p }
       parser.on("-h", "--help", "Show this help") { puts parser; exit 0 }
     end
@@ -66,6 +69,7 @@ module Edraj
 
     config.port = _port unless _port == 0
     config.host = _host unless _host.empty?
+    config.spaces = _spaces unless _spaces.size == 0
     config.run_path = Path.new _run_path unless _run_path.empty?
     config.data_path = Path.new _data_path unless _data_path.empty?
 

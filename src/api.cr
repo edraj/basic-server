@@ -7,8 +7,7 @@ require "jwt"
 require "colorize"
 require "./exts"
 require "./config"
-require "./core-models"
-require "./api-models"
+require "./service-models"
 require "file_utils"
 
 #  logger.debug "#{settings.host}:#{settings.port}".colorize.yellow
@@ -34,124 +33,49 @@ options "/**" do |env|
 end
 
 def process_request(request : Request) : Response
+  start = Time.monotonic
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
   puts "Processing #{request.type} request"
-  case request.type
-  when RequestType::Create
-    request.records.each do |record|
-      begin
-        puts "Creating record #{record.uuid}"
-        record.uuid = UUID.random if record.uuid.nil?
-        record.timestamp = Time.local if record.timestamp.nil?
-        owner = Locator.new request.space, "members/core", ResourceType::Actor, UUID.random
-        # owner = UUID.random
-        content : Content
-        case record.resource_type
-        when ResourceType::Media
-          content = Media.new owner, request.space, record.subpath, record.properties["filename"].as_s
-        when ResourceType::Message
-          from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
-          thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
-          _to = record.properties.delete "to"
-          to = [] of UUID
-          _to.as_a.each { |one| to << UUID.new one.as_s } if _to
-          content = Message.new owner, "embedded", from, to, thread_id
-        else
-          content = Content.new owner
+  actor = request.actor
+  # Impossible raise "Actor UUID is missing" if actor.nil?
+  space = request.space
+  raise "Space is bad not approved (#{space})" unless Edraj.settings.spaces.includes? space
+  begin
+    case request.type
+    when RequestType::Create, RequestType::Update, RequestType::Delete
+      request.records.each do |record|
+        begin
+          response.results << Entry.change request.type, space, record
+        rescue ex
+          response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
         end
-        content.timestamp = record.timestamp
-        content.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
-        content.location = "embedded"
-        content.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
-        content.payload = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
-        content.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
-        tags = record.properties.delete "tags"
-        tags.as_a.each { |tag| content.tags << tag.as_s } if tags
-
-				pp record.properties if record.properties.size > 0
-
-        # TBD check that record.properties is empty
-        locator = Locator.new request.space, record.subpath, record.resource_type, record.uuid
-        entry = Entry.new locator, content
-        entry.save # "#{record.uuid.to_s}.json"
-        response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{entry.locator.path}/#{entry.locator.json_name}"), "uuid" => JSON::Any.new("#{record.uuid.to_s}")} of String => JSON::Any
-      rescue ex
-        # puts "Exception"
-        # pp ex.backtrace?
-        response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
       end
+    when RequestType::Query
+      query = request.query
+      raise "Query is missing" if query.nil?
+      records, result = Entry.query space, query
+      response.records = records
+      response.results << result
+    when RequestType::Login
+      actor = request.actor
+      raise "Actor UUID is missing" if actor.nil?
+      data = {"actor" => actor.to_s, "iat" => Time.local.to_unix.to_s}
+      token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
+      # record = Record.new(ContentType::Token, actor, "/actors/kefah")
+      result = Result.new ResultType::Success
+      result.properties["token"] = JSON::Any.new token.to_s
+      response.results << result
+      # when RequestType::Logout
     end
-  when RequestType::Update
-    request.records.each do |record|
-      begin
-        locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
-        entry = Entry.new locator
-        entry.update record.properties
-        entry.save # record.uuid.to_s
-        response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}")} of String => JSON::Any
-      rescue ex
-        response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any
-      end
-    end
-  when RequestType::Delete
-    request.records.each do |record|
-      begin
-        locator = Locator.new(request.space, record.subpath, record.resource_type, record.uuid)
-        Entry.delete locator
-        response.results << Result.new ResultType::Success, {"message" => JSON::Any.new("#{request.type} #{request.space}/#{record.subpath}/#{record.uuid.to_s}")} of String => JSON::Any
-      rescue ex
-        response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any
-      end
-    end
-  when RequestType::Query
-    actor = request.actor
-    query = request.query
-    raise "Actor UUID is missing" if actor.nil?
-    raise "Query is missing" if query.nil?
-
-    # locator = Locator.new request.space, query.subpath, ResourceType::Folder
-    # entry = Entry.new locator
-    resources = [] of Locator
-
-    # case request.scope
-    # when ScopeType::Base
-    # when ScopeType::Onelevel
-    resources.concat Entry.resources request.space, query.subpath, query.resource_types
-    # end
-
-    count = 0
-    resources.each do |one|
-      puts "Retrieving content #{one.uuid.to_s}"
-      record = Record.new(one.resource_type, one.subpath, one.uuid)
-      entry = Entry.new one
-      # puts entry.meta.to_pretty_json2
-      record.properties["uuid"] = ::JSON::Any.new entry.locator.uuid.to_s
-      list, _ = entry.properties
-      record.properties.merge list
-      # record.properties["from"] = ::JSON::Any.new entry.from.to_s
-      # record.properties["to"] = entry.to
-      # record.properties["title"] = ::JSON::Any.new entry.title.to_s if !entry.title.nil?
-      # record.properties["body"] = entry.json_payload
-
-      # record.timestamp = entry.meta.timestamp
-      # record.properties["subpath"] = subpath
-      response.records << record
-      count += 1
-    end
-    response.results << Result.new ResultType::Success, {"returned" => JSON::Any.new(response.records.size.to_i64), "total" => JSON::Any.new(response.records.size.to_i64)} of String => JSON::Any
-  when RequestType::Login
-    response = Response.new
-    actor = request.actor
-    raise "Actor UUID is missing" if actor.nil?
-    data = {"actor" => actor.to_s, "iat" => Time.local.to_unix.to_s}
-    token = JWT.encode(data, Edraj.settings.jwt_secret, JWT::Algorithm::HS512)
-    # record = Record.new(ResourceType::Token, actor, "/actors/kefah")
-    result = Result.new ResultType::Success
-    result.properties["token"] = JSON::Any.new token.to_s
-    response.results << result
-    return response
-  when RequestType::Logout
+  rescue ex
+    response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
+  ensure
+    duration = Time.monotonic - start
+    puts "Duration #{duration.total_nanoseconds} nanoseconds"
+    # TBD build notification object and trigger to respective redis and sockets
+    # through channels?
+    # a log folder is maintained under the  content's folder.
   end
   response
 end
