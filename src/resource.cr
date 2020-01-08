@@ -3,6 +3,7 @@ require "uuid"
 require "uuid/json"
 
 module Edraj
+	# This is simply a compilation of all "terminal" child classes of Resource class.
   enum ResourceType
     Post
     Collection
@@ -18,7 +19,7 @@ module Edraj
     Page
     Block
     Logic
-    Reply
+    Reply # aka comment
     Reaction
     SuggestedModification
     Share
@@ -28,8 +29,13 @@ module Edraj
     Invitation
     Address
     Organization
+    StructuredJson
+    # Token
+    Locator
+		MessageDelivery 
   end
 
+	# صنف مجرد
   abstract class Resource
     include JSON::Serializable
 
@@ -38,13 +44,14 @@ module Edraj
     end
   end
 
+	# محدد
   class Locator < Resource
     include JSON::Serializable
     property id : ID
     property resource_type : ResourceType
     property space : String
     property subpath : String
-    property anchor : String?
+    property anchor : String? # A pointer to a sub-content in the resource
     property host : String?
     property uri : String? # Remote reference of the resource
 
@@ -69,6 +76,7 @@ module Edraj
     end
   end
 
+	# إشعار
   class Notification < Resource
     property actor : Locator         # Who did it?
     property timestamp = Time.local  # When did it happen. starting-point
@@ -93,15 +101,18 @@ module Edraj
     end
   end
 
+	# اشتراك
   class Subscription < Resource
     property subpath = ""
     property resource_types = [] of ResourceType
     property tags = [] of String
   end
 
+	# دعوة
   class Invitation < Resource
   end
 
+	# عنوان
   class Address < Resource
     property line : String
     property zipcode : String
@@ -111,12 +122,14 @@ module Edraj
     property geopoint : NamedTuple(long: Float64, lat: Float64)?
   end
 
+	# علاقة
   class Relationship < Resource
     property type : String
     property properties = {} of String => JSON::Any
     property related_to : Locator
   end
 
+	# ملف فوقي
   abstract class MetaFile < Resource
     property timestamp = Time.local
     property description : String?

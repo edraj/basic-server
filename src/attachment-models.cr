@@ -12,9 +12,9 @@ module Edraj
     Subscription
     Invitation
     # Token
-    # Notification
-    # Locator
-    # Location # Aka Address
+    Notification
+    Locator
+		MessageDelivery 
     Address
     Block
     Organization

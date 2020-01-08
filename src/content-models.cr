@@ -148,4 +148,12 @@ module Edraj
     property contact_details = [] of ContactDetail
     property identities = [] of Identity
   end
+
+  # A speical type of content that contains arbitrary JSON structured data accoriding to a schema
+  class StructuredJson < Content
+    property schema : String
+
+    def initialize(@owner, @schema)
+    end
+  end
 end
