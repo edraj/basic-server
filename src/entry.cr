@@ -1,5 +1,4 @@
 module Edraj
-
   class Entry
     property locator : Locator
     property meta_file : MetaFile
@@ -155,20 +154,20 @@ module Edraj
           to = [] of UUID
           _to.as_a.each { |one| to << UUID.new one.as_s } if _to
           meta_file = Message.new owner, "embedded", from, to, thread_id
-				when ResourceType::Post
-					meta_file = Post.new owner
-					meta_file.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
-					meta_file.location = "embedded"
-					meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
-					meta_file.body = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
-					meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
-				when ResourceType::User
-					meta_file = User.new "fixme put shortname here"
-				when ResourceType::Media
-					meta_file = Post.new owner
+        when ResourceType::Post
+          meta_file = Post.new owner
+          meta_file.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
+          meta_file.location = "embedded"
+          meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
+          meta_file.body = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
+          meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
+        when ResourceType::User
+          meta_file = User.new "fixme put shortname here"
+        when ResourceType::Media
+          meta_file = Post.new owner
         else
-					raise "Unrecognized resource type #{record.resource_type}"
-          #meta_file = Content.new owner
+          raise "Unrecognized resource type #{record.resource_type}"
+          # meta_file = Content.new owner
         end
         meta_file.timestamp = record.timestamp
         tags = record.properties.delete "tags"
@@ -177,16 +176,16 @@ module Edraj
         pp record.properties if record.properties.size > 0
 
         # TBD check that record.properties is empty
-				locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         entry = Entry.new locator, meta_file
         entry.save # "#{record.id.to_s}.json"
       when RequestType::Update
-				locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
+        locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
         entry = Entry.new locator
-        # FIXME entry.update record.properties
+        entry.meta_file.update record.properties
         entry.save # record.id.to_s
       when RequestType::Delete
-				locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         Entry.delete locator
       else
         raise "Invalid request type #{request_type}"
@@ -214,8 +213,8 @@ module Edraj
         entry = Entry.new one
         # puts entry.meta.to_pretty_json2
         record.properties["id"] = ::JSON::Any.new entry.locator.id.to_s
-        # list, _ = entry.meta_file.properties
-        # ???? record.properties.merge list
+        list, _ = entry.meta_file.properties
+        record.properties.merge list
         # record.properties["from"] = ::JSON::Any.new entry.from.to_s
         # record.properties["to"] = entry.to
         # record.properties["title"] = ::JSON::Any.new entry.title.to_s if !entry.title.nil?

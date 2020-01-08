@@ -28,8 +28,8 @@ module Edraj
       {list, included}
     end
 
-		def initialize(@shortname)
-		end
+    def initialize(@shortname)
+    end
 
     # forward_missing_to @contact
   end
@@ -39,7 +39,7 @@ module Edraj
 
   class Group < Actor
     property members = [] of Locator
-		property owners = [] of Locator
+    property owners = [] of Locator
   end
 
   class Bot < Actor

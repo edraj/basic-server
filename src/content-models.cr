@@ -36,8 +36,8 @@ module Edraj
   end
 
   class Content < MetaFile
-    property location : String = "none" # file://filepathname, embedded, uri://server..., none
-    property title : String? # subject / displayname
+    property location : String = "none"               # file://filepathname, embedded, uri://server..., none
+    property title : String?                          # subject / displayname
     property body : ::JSON::Any = ::JSON::Any.new nil # aka Body/Payload
     property content_type : String = "none"           # json+schema, media+subtype, folder, ...
     property content_encoding : String?

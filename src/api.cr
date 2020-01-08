@@ -50,6 +50,11 @@ def process_request(request : Request) : Response
           response.results << Entry.change request.type, space, record
         rescue ex
           response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
+        ensure
+          # TBD build notification object and trigger to respective redis and sockets
+          # through channels?
+          # including updating json documents and index on redis
+          puts "process record completed"
         end
       end
     when RequestType::Query

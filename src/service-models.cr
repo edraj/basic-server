@@ -80,8 +80,8 @@ module Edraj
     include JSON::Serializable
     property timestamp : Time = Time.local
     property resource_type : ResourceType
-		property parent : NamedTuple(id: UUID | String, resource_type: ResourceType, subpath: String)?
-    property id : UUID | String | Nil
+    property parent : NamedTuple(id: ID, resource_type: ResourceType, subpath: String)?
+    property id : ID?
     property subpath : String
     property properties = Hash(String, ::JSON::Any).new
     # property relationships : Hash(String, Record)?
@@ -121,5 +121,4 @@ module Edraj
     def initialize
     end
   end
-
 end

@@ -33,9 +33,6 @@ module Edraj
   abstract class Resource
     include JSON::Serializable
 
-    # abstract def update(list : Hash(String, ::JSON::Any))
-    # abstract def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
-
     def class_type
       self.class
     end
@@ -43,7 +40,7 @@ module Edraj
 
   class Locator < Resource
     include JSON::Serializable
-    property id : UUID | String 
+    property id : ID
     property resource_type : ResourceType
     property space : String
     property subpath : String
@@ -121,9 +118,12 @@ module Edraj
   end
 
   abstract class MetaFile < Resource
-		property timestamp = Time.local
-		property description : String?
-		property tags = [] of String
+    property timestamp = Time.local
+    property description : String?
+    property tags = [] of String
+
     # abstract def update
+    abstract def update(list : Hash(String, ::JSON::Any))
+    abstract def properties(fields = {} of String => Bool, includes = [] of ResourceType) : {Hash(String, JSON::Any), Array(Locator)}
   end
 end

@@ -42,7 +42,6 @@ module Edraj
     property hash : String
   end
 
-
   enum ReactionType
     Agreed
     Seen
@@ -74,7 +73,6 @@ module Edraj
     property replies = [] of Reply
     property status # New, Accepted, Rejected, Replied (commented)
   end
-
 
   class Media < Attachment
     property bytesize : Int64
