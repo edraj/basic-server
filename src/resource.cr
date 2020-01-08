@@ -2,8 +2,10 @@ require "json"
 require "uuid"
 require "uuid/json"
 
+alias ID = UUID | String
+
 module Edraj
-	# This is simply a compilation of all "terminal" child classes of Resource class.
+  # This is simply a compilation of all "terminal" child classes of Resource class.
   enum ResourceType
     Post
     Collection
@@ -32,10 +34,10 @@ module Edraj
     StructuredJson
     # Token
     Locator
-		MessageDelivery 
+    MessageDelivery
   end
 
-	# صنف مجرد
+  # صنف مجرد
   abstract class Resource
     include JSON::Serializable
 
@@ -44,7 +46,7 @@ module Edraj
     end
   end
 
-	# محدد
+  # محدد
   class Locator < Resource
     include JSON::Serializable
     property id : ID
@@ -76,7 +78,33 @@ module Edraj
     end
   end
 
-	# إشعار
+  enum RequestType
+    Create
+    Update
+    Delete
+    Send # Message
+    Query
+    Login
+  end
+
+  enum ResultType
+    Success
+    Inprogress # aka Processing
+    Partial
+    Failure
+  end
+
+  class Result
+    include JSON::Serializable
+    property status : ResultType
+    property code : Int64?
+    property properties : Hash(String, JSON::Any)
+
+    def initialize(@status, @properties = Hash(String, JSON::Any).new)
+    end
+  end
+
+  # إشعار
   class Notification < Resource
     property actor : Locator         # Who did it?
     property timestamp = Time.local  # When did it happen. starting-point
@@ -101,18 +129,18 @@ module Edraj
     end
   end
 
-	# اشتراك
+  # اشتراك
   class Subscription < Resource
     property subpath = ""
     property resource_types = [] of ResourceType
     property tags = [] of String
   end
 
-	# دعوة
+  # دعوة
   class Invitation < Resource
   end
 
-	# عنوان
+  # عنوان
   class Address < Resource
     property line : String
     property zipcode : String
@@ -122,14 +150,14 @@ module Edraj
     property geopoint : NamedTuple(long: Float64, lat: Float64)?
   end
 
-	# علاقة
+  # علاقة
   class Relationship < Resource
     property type : String
     property properties = {} of String => JSON::Any
     property related_to : Locator
   end
 
-	# ملف فوقي
+  # ملف فوقي
   abstract class MetaFile < Resource
     property timestamp = Time.local
     property description : String?

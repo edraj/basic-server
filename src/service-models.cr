@@ -21,32 +21,6 @@ module Edraj
   #		property files = Array(Content).new
   #  end
 
-  enum RequestType
-    Create
-    Update
-    Delete
-    Send # Message
-    Query
-    Login
-  end
-
-  enum ResultType
-    Success
-    Inprogress # aka Processing
-    Partial
-    Failure
-  end
-
-  class Result
-    include JSON::Serializable
-    property status : ResultType
-    property code : Int64?
-    property properties : Hash(String, JSON::Any)
-
-    def initialize(@status, @properties = Hash(String, JSON::Any).new)
-    end
-  end
-
   enum OrderType
     Natural
     Random

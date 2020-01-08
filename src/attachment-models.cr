@@ -14,7 +14,7 @@ module Edraj
     # Token
     Notification
     Locator
-		MessageDelivery 
+    MessageDelivery
     Address
     Block
     Organization
