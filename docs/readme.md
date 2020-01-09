@@ -15,4 +15,5 @@ Logic: Reusable logic that deals with content
 ```bash
 crystal tool hierarchy -e Resource src/*-models.cr
 crystal tool hierarchy -e Resource -f json src/*-models.cr | jq
+crystal tool hierarchy -e Resource --no-color src/*-models.cr > docs/hierarchy
 ```

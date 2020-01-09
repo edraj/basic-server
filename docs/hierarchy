@@ -62,19 +62,18 @@
         |  +- class Edraj::SuggestedModification (64 bytes)
         |         @replies : Array(Edraj::Reply) (8 bytes)
         |
-        +- class Edraj::AuthItem (40 bytes)
-        |  .   @uuid        : UUID           (16 bytes)
-        |  .   @shortname   : String         ( 8 bytes)
-        |  .   @description : (String | Nil) ( 8 bytes)
+        +- class Edraj::AuthItem (24 bytes)
+        |  .   @shortname   : String         (8 bytes)
+        |  .   @description : (String | Nil) (8 bytes)
         |  |
-        |  +- class Edraj::Permission (64 bytes)
+        |  +- class Edraj::Permission (48 bytes)
         |  |      @subpath        : String                     (8 bytes)
         |  |      @resource_types : Array(Edraj::ResourceType) (8 bytes)
         |  |      @actions        : Array(String)              (8 bytes)
         |  |
-        |  +- class Edraj::Role (56 bytes)
-        |         @permissions     : Array(UUID) (8 bytes)
-        |         @entitled_actors : Array(UUID) (8 bytes)
+        |  +- class Edraj::Role (40 bytes)
+        |         @permissions     : Array(String) (8 bytes)
+        |         @entitled_actors : Array(String) (8 bytes)
         |
         +- class Edraj::Identity (24 bytes)
         |      @type       : Edraj::IdentityType  (4 bytes)
