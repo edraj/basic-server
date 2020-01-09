@@ -137,13 +137,13 @@ module Edraj
 
     # forward_missing_to @meta_file
 
-    def self.change(request_type : RequestType, space : String, record : Record) : Result
+    def self.change_content(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
       case request_type
       when RequestType::Create
         puts "Creating record #{record.id}"
         record.id = UUID.random if record.id.nil?
         record.timestamp = Time.local if record.timestamp.nil?
-        owner = Locator.new space, "members/core", ResourceType::User, UUID.random
+        # owner = Locator.new space, "members/core", ResourceType::User, UUID.random
         # owner = UUID.random
         meta_file : MetaFile
         case record.resource_type
@@ -155,9 +155,9 @@ module Edraj
           _to = record.properties.delete "to"
           to = [] of UUID
           _to.as_a.each { |one| to << UUID.new one.as_s } if _to
-          meta_file = Message.new owner, "embedded", from, to, thread_id
+          meta_file = Message.new actor, "embedded", from, to, thread_id
         when ResourceType::Post
-          meta_file = Post.new owner
+          meta_file = Post.new actor
           meta_file.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
           meta_file.location = "embedded"
           meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
@@ -166,7 +166,7 @@ module Edraj
         when ResourceType::User
           meta_file = User.new "fixme put shortname here"
         when ResourceType::Media
-          meta_file = Post.new owner
+          meta_file = Post.new actor
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new owner
@@ -178,22 +178,81 @@ module Edraj
         pp record.properties if record.properties.size > 0
 
         # TBD check that record.properties is empty
-        locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         entry = Entry.new locator, meta_file
         entry.save # "#{record.id.to_s}.json"
       when RequestType::Update
-        locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
+        # locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
         entry = Entry.new locator
         entry.meta_file.update record.properties
         entry.save # record.id.to_s
       when RequestType::Delete
-        locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         Entry.delete locator
       else
         raise "Invalid request type #{request_type}"
       end
       # Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{entry.locator.path}/#{entry.locator.json_name}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
-      Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
+      Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{locator.space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
+    end
+
+    def self.change_attachment(actor : Locator, request_type : RequestType, parent : Locator, locator : Locator, record : Record) : Result
+      case request_type
+      when RequestType::Create
+        puts "Creating record #{record.id}"
+        record.id = UUID.random if record.id.nil?
+        record.timestamp = Time.local if record.timestamp.nil?
+        # owner = Locator.new space, "members/core", ResourceType::User, UUID.random
+        # owner = UUID.random
+        meta_file : MetaFile
+        case record.resource_type
+        # when ResourceType::Media
+        #  meta_file = Media.new owner, space, record.subpath, record.properties["filename"].as_s
+        when ResourceType::Message
+          from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
+          thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
+          _to = record.properties.delete "to"
+          to = [] of UUID
+          _to.as_a.each { |one| to << UUID.new one.as_s } if _to
+          meta_file = Message.new actor, "embedded", from, to, thread_id
+        when ResourceType::Post
+          meta_file = Post.new actor
+          meta_file.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
+          meta_file.location = "embedded"
+          meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
+          meta_file.body = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
+          meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
+        when ResourceType::User
+          meta_file = User.new "fixme put shortname here"
+        when ResourceType::Media
+          meta_file = Post.new actor
+        else
+          raise "Unrecognized resource type #{record.resource_type}"
+          # meta_file = Content.new actor
+        end
+        meta_file.timestamp = record.timestamp
+        tags = record.properties.delete "tags"
+        tags.as_a.each { |tag| meta_file.tags << tag.as_s } if tags
+
+        pp record.properties if record.properties.size > 0
+
+        # TBD check that record.properties is empty
+        # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        entry = Entry.new locator, meta_file
+        entry.save # "#{record.id.to_s}.json"
+      when RequestType::Update
+        # locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
+        entry = Entry.new locator
+        entry.meta_file.update record.properties
+        entry.save # record.id.to_s
+      when RequestType::Delete
+        # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+        Entry.delete locator
+      else
+        raise "Invalid request type #{request_type}"
+      end
+      # Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{entry.locator.path}/#{entry.locator.json_name}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
+      Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{locator.space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
     end
 
     def self.query(space, query)

@@ -38,16 +38,29 @@ def process_request(request : Request) : Response
   response = Response.new
   response.tracking_id = request.tracking_id if !request.tracking_id.nil?
   puts "Processing #{request.type} request"
-  actor = request.actor
   # Impossible raise "Actor UUID is missing" if actor.nil?
   space = request.space
   raise "Space is bad not approved (#{space})" unless Edraj.settings.spaces.includes? space
+  actor = Locator.new space, "actors", ResourceType::User, request.actor
   begin
     case request.type
     when RequestType::Create, RequestType::Update, RequestType::Delete
       request.records.each do |record|
         begin
-          response.results << Entry.change request.type, space, record
+          locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
+          resource_category = record.resource_type.category
+
+          case resource_category
+          when ResourceCategory::Content
+            response.results << Entry.change_content actor, request.type, locator, record
+          when ResourceCategory::Attachment
+            parent_tuple = record.parent
+            raise "Resource of Attachment category requires Parent fields to be provided, none found" if parent_tuple.nil?
+            parent = Locator.new space, parent_tuple[:subpath], parent_tuple[:resource_type], parent_tuple[:id]
+            response.results << Entry.change_attachment actor, request.type, parent, locator, record
+          else
+            raise "Unsupported resource type #{record.resource_type} category #{resource_category}"
+          end
         rescue ex
           response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
         ensure

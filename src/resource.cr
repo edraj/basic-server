@@ -5,6 +5,16 @@ require "uuid/json"
 alias ID = UUID | String
 
 module Edraj
+  enum ResourceCategory
+    Basic      # of type Resource
+    Content    # Content / Data that can be interacted with by other actors
+    Attachment # Sub-data that belongs to a primary entry, and has its own actor, id and timestamp
+    Actor
+    View
+    AuthItem
+    Logic
+  end
+
   # This is simply a compilation of all "terminal" child classes of Resource class.
   enum ResourceType
     Post
@@ -35,6 +45,29 @@ module Edraj
     # Token
     Locator
     MessageDelivery
+    Permission
+    Role
+
+    def category
+      case value
+      when Accomplishment, Media, MessageDelivery, Organization, Reaction, Reply, Share, Signature, SuggestedModification
+        ResourceCategory::Attachment
+      when Permission, Role
+        ResourceCategory::AuthItem
+      when Identity, Invitation, Locator, Notification, Query, Record, Relationship, Subscription
+        ResourceCategory::Basic
+      when User, Group, Bot
+        ResourceCategory::Actor
+      when Biography, Contact, Collection, Message, Post, StructuredJson
+        ResourceCategory::Content
+      when Logic
+        ResourceCategory::Logic
+      when Block, Page
+        ResourceCategory::View
+      else
+        raise "Uncategories resource"
+      end
+    end
   end
 
   # صنف مجرد
@@ -52,7 +85,6 @@ module Edraj
 
   # محدد
   class Locator < Resource
-    include JSON::Serializable
     property id : ID
     property resource_type : ResourceType
     property space : String
