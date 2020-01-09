@@ -121,24 +121,6 @@ module Edraj
     property handler : String # for social media full handler e.g. fb.com/kefahi or linkedin/in/kefahi
   end
 
-  enum IdentityType
-    Device
-    Application
-    Browser
-    Bot
-    Human
-    Group
-  end
-
-  @[Flags]
-  enum IdentityUsage
-    Sign
-    Issue
-    Encrypt
-    Authenticate
-    Certify
-  end
-
   class Organization < Attachment
     property shortname : String
     property displayname : String
@@ -162,12 +144,6 @@ module Edraj
     property organization : Organization?
     property role : String? # Paticipant, founder, inventor, composer, author, manager ....
 
-  end
-
-  class Identity < Attachment
-    property type : IdentityType
-    # FIXME property privileges : IdentityUsage
-    property public_key : String
   end
 
   enum MessageDeliveryStatus

@@ -26,8 +26,7 @@ module Edraj
     Random
   end
 
-  class Query
-    include JSON::Serializable
+  class Query < Resource
     property subpath : String
     property resources : Array(UUID)?
     property resource_types : Array(ResourceType)
@@ -50,8 +49,7 @@ module Edraj
     Subtree
   end
 
-  class Record
-    include JSON::Serializable
+  class Record < Resource
     property timestamp : Time = Time.local
     property resource_type : ResourceType
     property parent : NamedTuple(id: ID, resource_type: ResourceType, subpath: String)?
@@ -65,8 +63,7 @@ module Edraj
     end
   end
 
-  class Request
-    include JSON::Serializable
+  class Request < Resource
     property type : RequestType
     property space : String
     property actor : UUID
@@ -84,8 +81,7 @@ module Edraj
   #  Failure
   # end
 
-  class Response
-    include JSON::Serializable
+  class Response < Resource
     property tracking_id : String?
     property records = Array(Record).new
     property included : Array(Record)?

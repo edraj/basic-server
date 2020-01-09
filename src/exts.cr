@@ -24,3 +24,14 @@ module JSON::Serializable
 		end
 	end
 end
+
+# Needed to be able to persist UUID as Hash key in json
+struct UUID
+  def to_json_object_key
+    to_s
+  end
+
+  def self.from_json_object_key?(key : String)
+    UUID.new key
+  end
+end

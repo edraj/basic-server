@@ -1,3 +1,5 @@
+require "./resource"
+
 module Edraj
   class Entry
     property locator : Locator

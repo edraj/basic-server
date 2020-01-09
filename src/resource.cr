@@ -44,6 +44,10 @@ module Edraj
     def class_type
       self.class
     end
+
+    def to_s(io)
+      io << to_pretty_json()
+    end
   end
 
   # محدد
@@ -166,5 +170,33 @@ module Edraj
     # abstract def update
     abstract def update(list : Hash(String, ::JSON::Any))
     abstract def properties(fields = {} of String => Bool, includes = [] of ResourceType) : {Hash(String, JSON::Any), Array(Locator)}
+  end
+
+  enum IdentityType
+    Device
+    Application
+    Browser
+    Bot
+    Human
+    Group
+  end
+
+  @[Flags]
+  enum IdentityUsage
+    Sign
+    Issue
+    Encrypt
+    Authenticate
+    Certify
+
+    def self.new(value : Int64)
+      self.new value.to_i32
+    end
+  end
+
+  class Identity < Resource
+    property type : IdentityType
+    property privileges : IdentityUsage
+    property public_key : String
   end
 end
