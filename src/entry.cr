@@ -5,14 +5,14 @@ module Edraj
     property locator : Locator
     property meta_file : MetaFile
 
-    # New / Empty
-    def initialize(@locator, @meta_file, *args)
+    # Create new entry object (not persisted yet)
+    def initialize(@locator, @meta_file)
       # case @locator.resource_type
       # when ResourceType::Media
       # end
     end
 
-    # Load existing
+    # Load existing @meta_file from @locator
     def initialize(@locator)
       case @locator.resource_type
       when ResourceType::Message
@@ -22,10 +22,12 @@ module Edraj
       when ResourceType::User
         @meta_file = User.from_json @locator.path, @locator.json_name
       else
-        @meta_file = Content.from_json @locator.path, @locator.json_name
+				raise "Unsupported resource type #{@locator.resource_type}"
+        #@meta_file = Content.from_json @locator.path, @locator.json_name
       end
     end
 
+		# Persist @meta_file to @locator
     def save
       path = locator.path
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
@@ -196,18 +198,20 @@ module Edraj
       Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{locator.space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
     end
 
-    def self.change_attachment(actor : Locator, request_type : RequestType, parent : Locator, locator : Locator, record : Record) : Result
+    def process_attachment(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
       case request_type
       when RequestType::Create
         puts "Creating record #{record.id}"
         record.id = UUID.random if record.id.nil?
         record.timestamp = Time.local if record.timestamp.nil?
-        # owner = Locator.new space, "members/core", ResourceType::User, UUID.random
-        # owner = UUID.random
-        meta_file : MetaFile
+        # attachment : Attachment
         case record.resource_type
-        # when ResourceType::Media
-        #  meta_file = Media.new owner, space, record.subpath, record.properties["filename"].as_s
+        when ResourceType::Media
+					meta_file = @meta_file 
+					if meta_file.is_a?(Content)
+						meta_file.media << Media.new(actor, @locator.space, locator.subpath, record.properties["filename"].as_s)
+						
+					end
         when ResourceType::Message
           from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
           thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
@@ -224,8 +228,8 @@ module Edraj
           meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
         when ResourceType::User
           meta_file = User.new "fixme put shortname here"
-        when ResourceType::Media
-          meta_file = Post.new actor
+        #when ResourceType::Media
+          #meta_file = Post.new actor
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new actor
