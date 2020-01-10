@@ -143,8 +143,7 @@ module Edraj
     property duration : String? # Date range / span
     property organization : Organization?
     property role : String? # Paticipant, founder, inventor, composer, author, manager ....
-		property media = [] of Media
-
+    property media = [] of Media
   end
 
   enum MessageDeliveryStatus

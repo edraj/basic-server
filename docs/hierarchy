@@ -17,13 +17,14 @@
         |  .   @timestamp : Time           (24 bytes)
         |  .   @actor     : Edraj::Locator ( 8 bytes)
         |  |
-        |  +- class Edraj::Accomplishment (128 bytes)
+        |  +- class Edraj::Accomplishment (136 bytes)
         |  |      @type         : Edraj::AccomplishmentType   ( 4 bytes)
         |  |      @description  : String                      ( 8 bytes)
         |  |      @date_earned  : (Time | Nil)                (32 bytes)
         |  |      @duration     : (String | Nil)              ( 8 bytes)
         |  |      @organization : (Edraj::Organization | Nil) ( 8 bytes)
         |  |      @role         : (String | Nil)              ( 8 bytes)
+        |  |      @media        : Array(Edraj::Media)         ( 8 bytes)
         |  |
         |  +- class Edraj::Media (96 bytes)
         |  |      @bytesize     : Int64          (8 bytes)

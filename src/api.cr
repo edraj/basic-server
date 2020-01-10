@@ -57,7 +57,7 @@ def process_request(request : Request) : Response
             parent_tuple = record.parent
             raise "Resource of Attachment category requires Parent fields to be provided, none found" if parent_tuple.nil?
             parent = Locator.new space, parent_tuple[:subpath], parent_tuple[:resource_type], parent_tuple[:id]
-						entry = Entry.new parent
+            entry = Entry.new parent
             response.results << entry.process_attachment actor, request.type, locator, record
           else
             raise "Unsupported resource type #{record.resource_type} category #{resource_category}"

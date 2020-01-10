@@ -22,12 +22,12 @@ module Edraj
       when ResourceType::User
         @meta_file = User.from_json @locator.path, @locator.json_name
       else
-				raise "Unsupported resource type #{@locator.resource_type}"
-        #@meta_file = Content.from_json @locator.path, @locator.json_name
+        raise "Unsupported resource type #{@locator.resource_type}"
+        # @meta_file = Content.from_json @locator.path, @locator.json_name
       end
     end
 
-		# Persist @meta_file to @locator
+    # Persist @meta_file to @locator
     def save
       path = locator.path
       Dir.mkdir_p path.to_s unless Dir.exists? path.to_s
@@ -207,11 +207,10 @@ module Edraj
         # attachment : Attachment
         case record.resource_type
         when ResourceType::Media
-					meta_file = @meta_file 
-					if meta_file.is_a?(Content)
-						meta_file.media << Media.new(actor, @locator.space, locator.subpath, record.properties["filename"].as_s)
-						
-					end
+          meta_file = @meta_file
+          if meta_file.is_a?(Content)
+            meta_file.media << Media.new(actor, @locator.space, locator.subpath, record.properties["filename"].as_s)
+          end
         when ResourceType::Message
           from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
           thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
@@ -228,8 +227,8 @@ module Edraj
           meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
         when ResourceType::User
           meta_file = User.new "fixme put shortname here"
-        #when ResourceType::Media
-          #meta_file = Post.new actor
+          # when ResourceType::Media
+          # meta_file = Post.new actor
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new actor
