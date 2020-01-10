@@ -139,7 +139,7 @@ module Edraj
 
     # forward_missing_to @meta_file
 
-    def self.change_content(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
+    def self.process_content(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
       case request_type
       when RequestType::Create
         puts "Creating record #{record.id}"

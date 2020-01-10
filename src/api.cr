@@ -52,7 +52,7 @@ def process_request(request : Request) : Response
 
           case resource_category
           when ResourceCategory::Content
-            response.results << Entry.change_content actor, request.type, locator, record
+            response.results << Entry.process_content actor, request.type, locator, record
           when ResourceCategory::Attachment
             parent_tuple = record.parent
             raise "Resource of Attachment category requires Parent fields to be provided, none found" if parent_tuple.nil?
