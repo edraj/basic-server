@@ -17,36 +17,36 @@ module Edraj
 
   # This is simply a compilation of all "terminal" child classes of Resource class.
   enum ResourceType
-    Post
-    Collection
-    Biography
-    Contact
-    Task
-    Term
-    Message
-    Notification
-    User
-    Group
-    Media
-    Page
-    Block
-    Logic
-    Reply # aka comment
-    Reaction
-    SuggestedModification
-    Share
-    Signature
-    Relationship
-    Subscription
-    Invitation
-    Address
-    Organization
-    StructuredJson
-    # Token
-    Locator
-    MessageDelivery
-    Permission
-    Role
+    Post                  # Content
+    Collection            # Content
+    Biography             # Content
+    Task                  # Content
+    Term                  # Content
+    Message               # Content
+    StructuredJson        # Content
+    Contact               # Biography
+    Media                 # Attachment
+    Reply                 # Attachment aka comment
+    Reaction              # Attachment
+    SuggestedModification # Attachment
+    Share                 # Attachment
+    Signature             # Attachment
+    Organization          # Attachment
+    Accomplishment        # Attachment
+    MessageDelivery       # Attachment
+    Relationship          # Resource
+    Subscription          # Resource
+    Invitation            # Resource
+    Notification          # Resource
+    Address               # Resource
+    User                  # Actor
+    Group                 # actor
+    Page                  # View
+    Block                 # View
+    Logic                 # Logic
+    Locator               # Resource
+    Permission            # AuthItem
+    Role                  # AuthItem
 
     def category
       case value

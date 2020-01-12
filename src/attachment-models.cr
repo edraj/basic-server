@@ -22,9 +22,9 @@ module Edraj
 
   # Additional content attached to the main content by an actor. The attachment is usually part of the main content's json file.
   abstract class Attachment < Resource
-    property uuid : UUID
-    property timestamp : Time # When
-    property actor : Locator  # Who
+    property uuid = UUID.random
+    property timestamp = Time.local # When
+    property actor : Locator        # Who
     # def update(list : Hash(String, ::JSON::Any))
     # end
     # def properties(fields = {} of String => Bool, includes = [] of ResourceType) : { Hash(String, JSON::Any), Array(Locator)}
@@ -32,14 +32,21 @@ module Edraj
     #	included = [] of Locator
     #	{list, included}
     # end
+
+    def initialize(@actor)
+    end
   end
 
   class Signature < Attachment
-    property fields : Array(String)
+    property fields = [] of String
     property checksum : String
     property keyid : String
     property signatory : Locator
     property hash : String
+
+    def initialize(@actor, @checksum, @keyid, @signatory, @hash, @fields)
+      super(@actor)
+    end
   end
 
   enum ReactionType
@@ -56,15 +63,27 @@ module Edraj
 
   class Share < Attachment
     property location : Locator
+
+    def initialize(@actor, @location)
+      super(@actor)
+    end
   end
 
   class Reaction < Attachment
     property reaction_type : ReactionType
+
+    def initialize(@actor, @reaction_type)
+      super(@actor)
+    end
   end
 
   class Reply < Attachment
     property body : JSON::Any
     property media = Array(Media).new
+
+    def initialize(@actor, @body)
+      super(@actor)
+    end
   end
 
   class SuggestedModification < Attachment # Phrasing / Information / Addition / Removal
@@ -125,7 +144,11 @@ module Edraj
     property shortname : String
     property displayname : String
     property uri = [] of String
-    property logo : Media
+    property logo : Media?
+
+    def initialize(@actor, @shortname, @displayname)
+      super(@actor)
+    end
   end
 
   enum AccomplishmentType
@@ -144,6 +167,10 @@ module Edraj
     property organization : Organization?
     property role : String? # Paticipant, founder, inventor, composer, author, manager ....
     property media = [] of Media
+
+    def initialize(@actor, @type, @description)
+      super(@actor)
+    end
   end
 
   enum MessageDeliveryStatus
@@ -155,5 +182,9 @@ module Edraj
   class MessageDelivery < Attachment
     property recipient : Locator
     property status : MessageDeliveryStatus
+
+    def initialize(@actor, @recipient, @status)
+      super(@actor)
+    end
   end
 end

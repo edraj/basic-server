@@ -13,9 +13,9 @@
         |      @geopoint : (NamedTuple(long: Float64, lat: Float64) | Nil) (24 bytes)
         |
         +- class Edraj::Attachment (56 bytes)
+        |  .   @actor     : Edraj::Locator ( 8 bytes)
         |  .   @uuid      : UUID           (16 bytes)
         |  .   @timestamp : Time           (24 bytes)
-        |  .   @actor     : Edraj::Locator ( 8 bytes)
         |  |
         |  +- class Edraj::Accomplishment (136 bytes)
         |  |      @type         : Edraj::AccomplishmentType   ( 4 bytes)
@@ -38,10 +38,10 @@
         |  |      @status    : Edraj::MessageDeliveryStatus (4 bytes)
         |  |
         |  +- class Edraj::Organization (88 bytes)
-        |  |      @shortname   : String        (8 bytes)
-        |  |      @displayname : String        (8 bytes)
-        |  |      @logo        : Edraj::Media  (8 bytes)
-        |  |      @uri         : Array(String) (8 bytes)
+        |  |      @shortname   : String               (8 bytes)
+        |  |      @displayname : String               (8 bytes)
+        |  |      @logo        : (Edraj::Media | Nil) (8 bytes)
+        |  |      @uri         : Array(String)        (8 bytes)
         |  |
         |  +- class Edraj::Reaction (64 bytes)
         |  |      @reaction_type : Edraj::ReactionType (4 bytes)
@@ -54,11 +54,11 @@
         |  |      @location : Edraj::Locator (8 bytes)
         |  |
         |  +- class Edraj::Signature (96 bytes)
-        |  |      @fields    : Array(String)  (8 bytes)
         |  |      @checksum  : String         (8 bytes)
         |  |      @keyid     : String         (8 bytes)
         |  |      @signatory : Edraj::Locator (8 bytes)
         |  |      @hash      : String         (8 bytes)
+        |  |      @fields    : Array(String)  (8 bytes)
         |  |
         |  +- class Edraj::SuggestedModification (64 bytes)
         |         @replies : Array(Edraj::Reply) (8 bytes)

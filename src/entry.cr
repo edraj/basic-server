@@ -199,36 +199,25 @@ module Edraj
     end
 
     def process_attachment(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
+      meta_file = @meta_file
+      raise "Attachments can be only used with Content, current type is #{meta_file.class}" if !meta_file.is_a? Content
       case request_type
       when RequestType::Create
-        puts "Creating record #{record.id}"
         record.id = UUID.random if record.id.nil?
         record.timestamp = Time.local if record.timestamp.nil?
-        # attachment : Attachment
         case record.resource_type
         when ResourceType::Media
-          meta_file = @meta_file
-          if meta_file.is_a?(Content)
-            meta_file.media << Media.new(actor, @locator.space, locator.subpath, record.properties["filename"].as_s)
-          end
-        when ResourceType::Message
-          from = UUID.new record.properties.delete("from").to_s           # if record.properties.has_key? "from"
-          thread_id = UUID.new record.properties.delete("thread_id").to_s # if record.properties.has_key? "thread_id"
-          _to = record.properties.delete "to"
-          to = [] of UUID
-          _to.as_a.each { |one| to << UUID.new one.as_s } if _to
-          meta_file = Message.new actor, "embedded", from, to, thread_id
-        when ResourceType::Post
-          meta_file = Post.new actor
-          meta_file.title = record.properties.delete("title").to_s if record.properties.has_key? "title"
-          meta_file.location = "embedded"
-          meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
-          meta_file.body = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
-          meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
-        when ResourceType::User
-          meta_file = User.new "fixme put shortname here"
-          # when ResourceType::Media
-          # meta_file = Post.new actor
+          media = Media.new actor, @locator.space, locator.subpath, record.properties["filename"].as_s
+          meta_file.media << media
+        when ResourceType::Reply
+          reply = Reply.new actor, record.properties["body"]
+          meta_file.replies << reply
+        when ResourceType::Reaction
+          reaction = Reaction.new actor, ReactionType.parse record.properties["reaction_type"].as_s
+          meta_file.reactions << reaction
+        when ResourceType::Share
+          share = Share.new actor, @locator # fix me
+          meta_file.shares << share
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new actor
