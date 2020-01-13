@@ -86,6 +86,16 @@ module Edraj
     end
   end
 
+  # علاقة
+  class Relationship < Attachment
+    property type : String
+    property properties = {} of String => JSON::Any
+    property related_to : Locator
+
+    def initialize(@actor, @type, @related_to)
+    end
+  end
+
   class SuggestedModification < Attachment # Phrasing / Information / Addition / Removal
     property original
     property suggested

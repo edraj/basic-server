@@ -46,6 +46,11 @@
         |  +- class Edraj::Reaction (64 bytes)
         |  |      @reaction_type : Edraj::ReactionType (4 bytes)
         |  |
+        |  +- class Edraj::Relationship (80 bytes)
+        |  |      @type       : String                  (8 bytes)
+        |  |      @related_to : Edraj::Locator          (8 bytes)
+        |  |      @properties : Hash(String, JSON::Any) (8 bytes)
+        |  |
         |  +- class Edraj::Reply (80 bytes)
         |  |      @body  : JSON::Any           (16 bytes)
         |  |      @media : Array(Edraj::Media) ( 8 bytes)
@@ -152,7 +157,11 @@
         |  |  |      @thread_id        : UUID                          (16 bytes)
         |  |  |      @delivery_updates : Array(Edraj::MessageDelivery) ( 8 bytes)
         |  |  |
+        |  |  +- class Edraj::OtherSpaces (200 bytes)
+        |  |  |
         |  |  +- class Edraj::Post (200 bytes)
+        |  |  |
+        |  |  +- class Edraj::Publication (200 bytes)
         |  |  |
         |  |  +- class Edraj::StructuredJson (208 bytes)
         |  |         @schema : String (8 bytes)
@@ -178,11 +187,6 @@
         |      @results   : Array(Edraj::Result) ( 8 bytes)
         |      @body      : JSON::Any            (16 bytes)
         |      @timestamp : Time                 (24 bytes)
-        |
-        +- class Edraj::Relationship (32 bytes)
-        |      @type       : String                  (8 bytes)
-        |      @related_to : Edraj::Locator          (8 bytes)
-        |      @properties : Hash(String, JSON::Any) (8 bytes)
         |
         +- class Edraj::Subscription (32 bytes)
                @subpath        : String                     (8 bytes)

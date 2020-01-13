@@ -186,13 +186,6 @@ module Edraj
     property geopoint : NamedTuple(long: Float64, lat: Float64)?
   end
 
-  # علاقة
-  class Relationship < Resource
-    property type : String
-    property properties = {} of String => JSON::Any
-    property related_to : Locator
-  end
-
   # ملف فوقي
   abstract class MetaFile < Resource
     property timestamp = Time.local

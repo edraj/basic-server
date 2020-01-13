@@ -40,7 +40,7 @@ def process_request(request : Request) : Response
   puts "Processing #{request.type} request"
   # Impossible raise "Actor UUID is missing" if actor.nil?
   space = request.space
-  raise "Space is bad not approved (#{space})" unless Edraj.settings.spaces.includes? space
+  raise "Space is bad or not approved (#{space})" unless Edraj.settings.spaces.includes? space
   actor = Locator.new space, "actors", ResourceType::User, request.actor
   begin
     case request.type
@@ -57,8 +57,7 @@ def process_request(request : Request) : Response
             parent_tuple = record.parent
             raise "Resource of Attachment category requires Parent fields to be provided, none found" if parent_tuple.nil?
             parent = Locator.new space, parent_tuple[:subpath], parent_tuple[:resource_type], parent_tuple[:id]
-            entry = Entry.new parent
-            response.results << entry.process_attachment actor, request.type, locator, record
+            response.results << Entry.process_attachment actor, request.type, parent, locator, record
           else
             raise "Unsupported resource type #{record.resource_type} category #{resource_category}"
           end

@@ -18,13 +18,14 @@ module Edraj
   end
 
   enum ContentType
-    Contact    # Person or Organization
-    Biography  # Person or Organization
-    Collection # Aka Collection
-    Post       # aka article
-    Message    # Short/plain message, Email correspondance
-    Task       # aka Todo item with basic workflow (status)
-    Term       # Term definition: Word, sub-phrase, translation ...etc
+    Contact     # Person or Organization
+    Biography   # Person or Organization
+    Collection  # Aka Collection
+    Post        # aka article
+    Message     # Short/plain message, Email correspondance
+    Task        # aka Todo item with basic workflow (status)
+    Term        # Term definition: Word, sub-phrase, translation ...etc
+    Publication # Journal, Magazine, book, e-book/e-publication (can be present in various forms : document, chm, har, pdf ...etc)
     # Product
 
     # Page
@@ -67,6 +68,9 @@ module Edraj
     def initialize(@owner)
     end
 
+    def logs(query) # Returns log entries for this content
+    end
+
     def update(list : Hash(String, ::JSON::Any))
       @title = list["title"].as_s if list.has_key? "title"
       @body = list["body"] if list.has_key? "body"
@@ -98,6 +102,17 @@ module Edraj
     end
 
     def add_attachment(item) # returns id
+    end
+
+    def append_attachment(attachment : Media | Reply | Reaction | Share)
+      case attachment
+      when Media
+      when Reply
+      when Reaction
+      when Share
+      else
+        raise "Unsupported attachment type #{attachment.class}"
+      end
     end
 
     def update_attachment(media)
@@ -142,6 +157,12 @@ module Edraj
 
     def initialize(@owner, @shortname, @displayname)
     end
+  end
+
+  class Publication < Content
+  end
+
+  class OtherSpaces < Content # A database of Locator's to other spaces along some basic indexed data.
   end
 
   class Contact < Biography

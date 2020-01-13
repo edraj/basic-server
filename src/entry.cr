@@ -198,8 +198,9 @@ module Edraj
       Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{locator.space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
     end
 
-    def process_attachment(actor : Locator, request_type : RequestType, locator : Locator, record : Record) : Result
-      meta_file = @meta_file
+    def self.process_attachment(actor : Locator, request_type : RequestType, parent : Locator, locator : Locator, record : Record) : Result
+      entry = Entry.new parent
+      meta_file = entry.meta_file
       raise "Attachments can be only used with Content, current type is #{meta_file.class}" if !meta_file.is_a? Content
       case request_type
       when RequestType::Create
@@ -207,7 +208,7 @@ module Edraj
         record.timestamp = Time.local if record.timestamp.nil?
         case record.resource_type
         when ResourceType::Media
-          media = Media.new actor, @locator.space, locator.subpath, record.properties["filename"].as_s
+          media = Media.new actor, parent.space, locator.subpath, record.properties["filename"].as_s
           meta_file.media << media
         when ResourceType::Reply
           reply = Reply.new actor, record.properties["body"]
@@ -216,30 +217,33 @@ module Edraj
           reaction = Reaction.new actor, ReactionType.parse record.properties["reaction_type"].as_s
           meta_file.reactions << reaction
         when ResourceType::Share
-          share = Share.new actor, @locator # fix me
+          share = Share.new actor, locator # fix me
           meta_file.shares << share
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new actor
         end
-        meta_file.timestamp = record.timestamp
+        entry.meta_file.timestamp = record.timestamp
         tags = record.properties.delete "tags"
-        tags.as_a.each { |tag| meta_file.tags << tag.as_s } if tags
+        tags.as_a.each { |tag| entry.meta_file.tags << tag.as_s } if tags
 
         pp record.properties if record.properties.size > 0
 
         # TBD check that record.properties is empty
         # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
-        entry = Entry.new locator, meta_file
-        entry.save # "#{record.id.to_s}.json"
+        # entry.save # "#{record.id.to_s}.json"
+        entry.save
       when RequestType::Update
         # locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
-        entry = Entry.new locator
+        # entry = Entry.new locator
         entry.meta_file.update record.properties
         entry.save # record.id.to_s
       when RequestType::Delete
         # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
-        Entry.delete locator
+        # Entry.delete locator
+        # TBD lookup the respective attachment (by id) and remove it
+
+        entry.save
       else
         raise "Invalid request type #{request_type}"
       end
