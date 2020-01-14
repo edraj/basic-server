@@ -177,4 +177,35 @@ module Edraj
     def initialize(@owner, @schema)
     end
   end
+
+
+	abstract class Logic < MetaFile
+    def update(list : Hash(String, ::JSON::Any))
+		end
+    def properties(fields = {} of String => Bool, includes = [] of ResourceType)
+      list = {} of String => JSON::Any
+      included = [] of Locator
+      {list, included}
+    end
+	end
+
+
+	# Libarry logic that can be invoked from elsewhere
+	class Liberary < Logic
+	end
+
+	# Triggerable by Time or Event
+	class Triggerable < Logic
+		# condition indicates what type / parameters for event listening
+		def set(condition)
+		end
+		# Check if the trigger condition is true if so invoke exec
+		def check
+		end
+
+		# Execute action 
+		def exec
+		end
+	end
+
 end
