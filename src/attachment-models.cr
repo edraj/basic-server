@@ -61,6 +61,9 @@ module Edraj
     Report # aka Inappropriate
   end
 
+  class Vote < Attachment
+  end
+
   class Share < Attachment
     property location : Locator
 

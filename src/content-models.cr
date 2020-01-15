@@ -53,6 +53,9 @@ module Edraj
     property reactions = [] of Reaction
     property suggested_modifications = [] of SuggestedModification
     property shares = [] of Share
+    property votes = [] of Vote
+
+    # property attachments = {} of AttachmentType => Attachment
 
     def json_body : JSON::Any
       return @body if @location.starts_with? "embedded"
@@ -101,15 +104,24 @@ module Edraj
     def attachments(query)
     end
 
-    def add_attachment(item) # returns id
-    end
-
-    def append_attachment(attachment : Media | Reply | Reaction | Share)
+    def append_attachment(attachment : Media | Reply | Reaction | Share | Relationship | Signature | SuggestedModification | Vote)
       case attachment
       when Media
+        @media << attachment
       when Reply
+        @replies << attachment
       when Reaction
+        @reactions << attachment
       when Share
+        @shares << attachment
+      when Relatiohship
+        @relationships << attachment
+      when Signatures
+        @signatures << signature
+      when SuggestedModification
+        @suggested_modifications << attachment
+      when Votes
+        @votes << attachment
       else
         raise "Unsupported attachment type #{attachment.class}"
       end
@@ -150,16 +162,23 @@ module Edraj
     property shortname : String
     property dob : Time?
     property dod : Time?
-    property displayname : String
+    property displayname : String?
     property about : String?
     property accomplishments = [] of Accomplishment
     property pictures = [] of Media
 
-    def initialize(@owner, @shortname, @displayname)
+    def initialize(@owner, @shortname)
     end
   end
 
   class Publication < Content
+  end
+
+  class Task < Content
+    # tbd lifecyrle (status flow)
+  end
+
+  class Term < Content
   end
 
   class OtherSpaces < Content # A database of Locator's to other spaces along some basic indexed data.
@@ -178,34 +197,33 @@ module Edraj
     end
   end
 
-
-	abstract class Logic < MetaFile
+  abstract class Logic < MetaFile
     def update(list : Hash(String, ::JSON::Any))
-		end
+    end
+
     def properties(fields = {} of String => Bool, includes = [] of ResourceType)
       list = {} of String => JSON::Any
       included = [] of Locator
       {list, included}
     end
-	end
+  end
 
+  # Libarry logic that can be invoked from elsewhere
+  class Library < Logic
+  end
 
-	# Libarry logic that can be invoked from elsewhere
-	class Liberary < Logic
-	end
+  # Triggerable by Time or Event
+  class Triggerable < Logic
+    # condition indicates what type / parameters for event listening
+    def set(condition)
+    end
 
-	# Triggerable by Time or Event
-	class Triggerable < Logic
-		# condition indicates what type / parameters for event listening
-		def set(condition)
-		end
-		# Check if the trigger condition is true if so invoke exec
-		def check
-		end
+    # Check if the trigger condition is true if so invoke exec
+    def check_event(event)
+    end
 
-		# Execute action 
-		def exec
-		end
-	end
-
+    # Execute action
+    def execute
+    end
+  end
 end

@@ -24,6 +24,7 @@ module Edraj
     Term                  # Content
     Message               # Content
     StructuredJson        # Content
+    Publication           # Content
     Contact               # Biography
     Media                 # Attachment
     Reply                 # Attachment aka comment
@@ -34,6 +35,7 @@ module Edraj
     Organization          # Attachment
     Accomplishment        # Attachment
     MessageDelivery       # Attachment
+    Vote                  # Attachment
     Relationship          # Resource
     Subscription          # Resource
     Invitation            # Resource
@@ -43,14 +45,15 @@ module Edraj
     Group                 # actor
     Page                  # View
     Block                 # View
-    Logic                 # Logic
+    Library               # Logic
+    Triggerable           # Logic
     Locator               # Resource
     Permission            # AuthItem
     Role                  # AuthItem
 
     def category
       case value
-      when Accomplishment, Media, MessageDelivery, Organization, Reaction, Reply, Share, Signature, SuggestedModification
+      when Accomplishment, Media, MessageDelivery, Organization, Reaction, Reply, Share, Signature, SuggestedModification, Vote
         ResourceCategory::Attachment
       when Permission, Role
         ResourceCategory::AuthItem
@@ -58,7 +61,7 @@ module Edraj
         ResourceCategory::Basic
       when User, Group, Bot
         ResourceCategory::Actor
-      when Biography, Contact, Collection, Message, Post, StructuredJson
+      when Biography, Contact, Collection, Message, Post, StructuredJson | Task | Term | Publication
         ResourceCategory::Content
       when Logic
         ResourceCategory::Logic

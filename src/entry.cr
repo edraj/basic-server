@@ -165,10 +165,20 @@ module Edraj
           meta_file.content_type = record.properties.delete("content_type").to_s if record.properties.has_key? "content_type"
           meta_file.body = ::JSON.parse(record.properties.delete("body").to_json) if record.properties.has_key? "body"
           meta_file.response_to = UUID.new record.properties.delete("response_to").to_s if record.properties.has_key? "response_to"
-        when ResourceType::User
-          meta_file = User.new "fixme put shortname here"
-        when ResourceType::Media
-          meta_file = Post.new actor
+        when ResourceType::Contact
+          meta_file = Contact.new actor, "fixme put shortname here"
+        when ResourceType::Task
+          meta_file = Task.new actor
+          # when ResourceType::Library
+          #	meta_file = Library.new
+          # when ResourceType::Triggerable
+          #	meta_file = Triggerable.new
+        when ResourceType::Term
+          meta_file = Term.new actor
+        when ResourceType::Publication
+          meta_file = Publication.new actor
+        when ResourceType::Collection
+          meta_file = Collection.new actor
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new owner
@@ -208,13 +218,19 @@ module Edraj
         record.timestamp = Time.local if record.timestamp.nil?
         case record.resource_type
         when ResourceType::Media
-          media = Media.new actor, parent.space, locator.subpath, record.properties["filename"].as_s
+          filename = record.properties.delete("filename")
+          raise "File name is not provided with meda resource" if filename.nil?
+          media = Media.new actor, parent.space, locator.subpath, filename.as_s
           meta_file.media << media
         when ResourceType::Reply
-          reply = Reply.new actor, record.properties["body"]
+          body = record.properties.delete("body")
+          raise "Body is not provided in reply" if body.nil?
+          reply = Reply.new actor, body
           meta_file.replies << reply
         when ResourceType::Reaction
-          reaction = Reaction.new actor, ReactionType.parse record.properties["reaction_type"].as_s
+          reaction_type = record.properties.delete("reaction_type")
+          raise "ReactionType is not provided in reaction" if reaction_type.nil?
+          reaction = Reaction.new actor, ReactionType.parse reaction_type.as_s
           meta_file.reactions << reaction
         when ResourceType::Share
           share = Share.new actor, locator # fix me
