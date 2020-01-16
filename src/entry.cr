@@ -241,7 +241,7 @@ module Edraj
         end
         entry.meta_file.timestamp = record.timestamp
         tags = record.properties.delete "tags"
-        tags.as_a.each { |tag| entry.meta_file.tags << tag.as_s } if tags
+				tags.as_a.each { |tag| entry.meta_file.tags << tag.as_s if !entry.meta_file.tags.includes? tag.as_s} if tags
 
         pp record.properties if record.properties.size > 0
 
