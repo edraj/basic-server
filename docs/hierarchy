@@ -90,14 +90,15 @@
         |
         +- class Edraj::Invitation (4 bytes)
         |
-        +- class Edraj::Locator (80 bytes)
-        |      @id            : (String | UUID)     (24 bytes)
-        |      @resource_type : Edraj::ResourceType ( 4 bytes)
-        |      @space         : String              ( 8 bytes)
-        |      @subpath       : String              ( 8 bytes)
-        |      @anchor        : (String | Nil)      ( 8 bytes)
-        |      @host          : (String | Nil)      ( 8 bytes)
-        |      @uri           : (String | Nil)      ( 8 bytes)
+        +- class Edraj::Locator (104 bytes)
+        |      @id            : (String | UUID)       (24 bytes)
+        |      @resource_type : Edraj::ResourceType   ( 4 bytes)
+        |      @space         : String                ( 8 bytes)
+        |      @subpath       : String                ( 8 bytes)
+        |      @parent_id     : (String | UUID | Nil) (24 bytes)
+        |      @anchor        : (String | Nil)        ( 8 bytes)
+        |      @host          : (String | Nil)        ( 8 bytes)
+        |      @uri           : (String | Nil)        ( 8 bytes)
         |
         +- class Edraj::MetaFile (48 bytes)
         |  .   @description : (String | Nil) ( 8 bytes)
@@ -120,26 +121,18 @@
         |  |  |
         |  |  +- class Edraj::User (96 bytes)
         |  |
-        |  +- class Edraj::Content (208 bytes)
-        |  |  .   @location                : String                              ( 8 bytes)
-        |  |  .   @title                   : (String | Nil)                      ( 8 bytes)
-        |  |  .   @body                    : JSON::Any                           (16 bytes)
-        |  |  .   @content_type            : String                              ( 8 bytes)
-        |  |  .   @content_encoding        : (String | Nil)                      ( 8 bytes)
-        |  |  .   @actor                   : (Edraj::Locator | Nil)              ( 8 bytes)
-        |  |  .   @owner                   : Edraj::Locator                      ( 8 bytes)
-        |  |  .   @author                  : (Edraj::Locator | Nil)              ( 8 bytes)
-        |  |  .   @response_to             : (UUID | Nil)                        (24 bytes)
-        |  |  .   @relationships           : Array(Edraj::Relationship)          ( 8 bytes)
-        |  |  .   @signatures              : Array(Edraj::Signature)             ( 8 bytes)
-        |  |  .   @media                   : Array(Edraj::Media)                 ( 8 bytes)
-        |  |  .   @replies                 : Array(Edraj::Reply)                 ( 8 bytes)
-        |  |  .   @reactions               : Array(Edraj::Reaction)              ( 8 bytes)
-        |  |  .   @suggested_modifications : Array(Edraj::SuggestedModification) ( 8 bytes)
-        |  |  .   @shares                  : Array(Edraj::Share)                 ( 8 bytes)
-        |  |  .   @votes                   : Array(Edraj::Vote)                  ( 8 bytes)
+        |  +- class Edraj::Content (144 bytes)
+        |  |  .   @location         : String                 ( 8 bytes)
+        |  |  .   @title            : (String | Nil)         ( 8 bytes)
+        |  |  .   @body             : JSON::Any              (16 bytes)
+        |  |  .   @content_type     : String                 ( 8 bytes)
+        |  |  .   @content_encoding : (String | Nil)         ( 8 bytes)
+        |  |  .   @actor            : (Edraj::Locator | Nil) ( 8 bytes)
+        |  |  .   @owner            : Edraj::Locator         ( 8 bytes)
+        |  |  .   @author           : (Edraj::Locator | Nil) ( 8 bytes)
+        |  |  .   @response_to      : (UUID | Nil)           (24 bytes)
         |  |  |
-        |  |  +- class Edraj::Biography (312 bytes)
+        |  |  +- class Edraj::Biography (248 bytes)
         |  |  |  .   @shortname       : String                       ( 8 bytes)
         |  |  |  .   @dob             : (Time | Nil)                 (32 bytes)
         |  |  |  .   @dod             : (Time | Nil)                 (32 bytes)
@@ -148,30 +141,30 @@
         |  |  |  .   @accomplishments : Array(Edraj::Accomplishment) ( 8 bytes)
         |  |  |  .   @pictures        : Array(Edraj::Media)          ( 8 bytes)
         |  |  |  |
-        |  |  |  +- class Edraj::Contact (328 bytes)
+        |  |  |  +- class Edraj::Contact (264 bytes)
         |  |  |         @contact_details : Array(Edraj::ContactDetail) (8 bytes)
         |  |  |         @identities      : Array(Edraj::Identity)      (8 bytes)
         |  |  |
-        |  |  +- class Edraj::Collection (208 bytes)
+        |  |  +- class Edraj::Collection (144 bytes)
         |  |  |
-        |  |  +- class Edraj::Message (256 bytes)
+        |  |  +- class Edraj::Message (192 bytes)
         |  |  |      @from             : UUID                          (16 bytes)
         |  |  |      @to               : Array(UUID)                   ( 8 bytes)
         |  |  |      @thread_id        : UUID                          (16 bytes)
         |  |  |      @delivery_updates : Array(Edraj::MessageDelivery) ( 8 bytes)
         |  |  |
-        |  |  +- class Edraj::OtherSpaces (208 bytes)
+        |  |  +- class Edraj::OtherSpaces (144 bytes)
         |  |  |
-        |  |  +- class Edraj::Post (208 bytes)
+        |  |  +- class Edraj::Post (144 bytes)
         |  |  |
-        |  |  +- class Edraj::Publication (208 bytes)
+        |  |  +- class Edraj::Publication (144 bytes)
         |  |  |
-        |  |  +- class Edraj::StructuredJson (216 bytes)
+        |  |  +- class Edraj::StructuredJson (152 bytes)
         |  |  |      @schema : String (8 bytes)
         |  |  |
-        |  |  +- class Edraj::Task (208 bytes)
+        |  |  +- class Edraj::Task (144 bytes)
         |  |  |
-        |  |  +- class Edraj::Term (208 bytes)
+        |  |  +- class Edraj::Term (144 bytes)
         |  |
         |  +- class Edraj::Logic (48 bytes)
         |  |  |

@@ -17,58 +17,59 @@ module Edraj
 
   # This is simply a compilation of all "terminal" child classes of Resource class.
   enum ResourceType
-    Post                  # Content
-    Collection            # Content
-    Biography             # Content
-    Task                  # Content
-    Term                  # Content
-    Message               # Content
-    StructuredJson        # Content
-    Publication           # Content
-    Contact               # Biography
-    Media                 # Attachment
-    Reply                 # Attachment aka comment
-    Reaction              # Attachment
-    SuggestedModification # Attachment
-    Share                 # Attachment
-    Signature             # Attachment
-    Organization          # Attachment
-    Accomplishment        # Attachment
-    MessageDelivery       # Attachment
-    Vote                  # Attachment
-    Relationship          # Resource
-    Subscription          # Resource
-    Invitation            # Resource
-    Notification          # Resource
-    Address               # Resource
-    User                  # Actor
-    Group                 # actor
-    Page                  # View
-    Block                 # View
-    Library               # Logic
-    Triggerable           # Logic
-    Locator               # Resource
-    Permission            # AuthItem
-    Role                  # AuthItem
+    Post            # Content
+    Collection      # Content
+    Biography       # Content
+    Task            # Content
+    Term            # Content
+    Message         # Content
+    StructuredJson  # Content
+    Publication     # Content
+    Contact         # Biography
+    Media           # Attachment
+    Reply           # Attachment aka comment
+    Reaction        # Attachment
+    Alteration      # Attachment
+    Share           # Attachment
+    Signature       # Attachment
+    Organization    # Attachment
+    Accomplishment  # Attachment
+    MessageDelivery # Attachment
+    Vote            # Attachment
+    Relationship    # Attachment 
+    Subscription    # Resource
+		Identity        # Resource
+    Invitation      # Resource
+    Notification    # Resource
+    Address         # Resource
+    User            # Actor
+    Group           # actor
+    Page            # View
+    Block           # View
+    Library         # Logic
+    Triggerable     # Logic
+    Locator         # Resource
+    Permission      # AuthItem
+    Role            # AuthItem
 
     def category
       case value
-      when Accomplishment, Media, MessageDelivery, Organization, Reaction, Reply, Share, Signature, SuggestedModification, Vote
+      when Accomplishment, Media, MessageDelivery, Organization, Reaction, Relationship, Reply, Share, Signature, Alteration, Vote
         ResourceCategory::Attachment
       when Permission, Role
         ResourceCategory::AuthItem
-      when Identity, Invitation, Locator, Notification, Query, Record, Relationship, Subscription
+      when Address, Identity, Invitation, Locator, Notification, Query, Record, Subscription
         ResourceCategory::Basic
       when User, Group, Bot
         ResourceCategory::Actor
       when Biography, Contact, Collection, Message, Post, StructuredJson | Task | Term | Publication
         ResourceCategory::Content
-      when Logic
+      when Library | Triggerable
         ResourceCategory::Logic
       when Block, Page
         ResourceCategory::View
       else
-        raise "Uncategories resource"
+        raise "Uncategoried resource"
       end
     end
   end
@@ -84,6 +85,10 @@ module Edraj
     def to_s(io)
       io << to_pretty_json()
     end
+		
+
+		def save(locator : Locator)
+		end
   end
 
   # محدد
@@ -92,6 +97,7 @@ module Edraj
     property resource_type : ResourceType
     property space : String
     property subpath : String
+    property parent_id : ID?  # This is required for Attachments only
     property anchor : String? # A pointer to a sub-content in the resource
     property host : String?
     property uri : String? # Remote reference of the resource

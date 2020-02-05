@@ -116,7 +116,9 @@ module Edraj
     end
 
     # Move
-    def self.move(old_path : Path, new_path : Path)
+    def self.move(old_locator : Locator, new_locator : Locator)
+			old_path = Path.new
+			new_path = Path.new
       File.move old_path, new_path
     end
 
@@ -241,28 +243,26 @@ module Edraj
         end
         entry.meta_file.timestamp = record.timestamp
         tags = record.properties.delete "tags"
-				tags.as_a.each { |tag| entry.meta_file.tags << tag.as_s if !entry.meta_file.tags.includes? tag.as_s} if tags
+        tags.as_a.each { |tag| entry.meta_file.tags << tag.as_s if !entry.meta_file.tags.includes? tag.as_s } if tags
 
         pp record.properties if record.properties.size > 0
 
         # TBD check that record.properties is empty
         # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         # entry.save # "#{record.id.to_s}.json"
-        entry.save
       when RequestType::Update
         # locator = Locator.new(space, record.subpath, record.resource_type, record.id.to_s)
         # entry = Entry.new locator
         entry.meta_file.update record.properties
-        entry.save # record.id.to_s
       when RequestType::Delete
         # locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
         # Entry.delete locator
         # TBD lookup the respective attachment (by id) and remove it
 
-        entry.save
       else
         raise "Invalid request type #{request_type}"
       end
+      entry.save
       # Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{entry.locator.path}/#{entry.locator.json_name}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
       Result.new ResultType::Success, {"message" => JSON::Any.new("#{request_type} #{locator.space}/#{record.subpath}/#{record.id.to_s}"), "id" => JSON::Any.new("#{record.id.to_s}")} of String => JSON::Any
     end

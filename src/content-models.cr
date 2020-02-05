@@ -1,4 +1,5 @@
 require "./resource"
+require "./attachment-models"
 
 module Edraj
   enum MainType
@@ -46,14 +47,15 @@ module Edraj
     property owner : Locator   # Owner of the content (including body and attachments) : user, group ...
     property author : Locator? # Original author of the content
     property response_to : UUID?
-    property relationships = [] of Relationship
-    property signatures = [] of Signature
-    property media = [] of Media
-    property replies = [] of Reply
-    property reactions = [] of Reaction
-    property suggested_modifications = [] of SuggestedModification
-    property shares = [] of Share
-    property votes = [] of Vote
+
+    # property relationships = [] of Relationship
+    # property signatures = [] of Signature
+    # property media = [] of Media
+    # property replies = [] of Reply
+    # property reactions = [] of Reaction
+    # property alterations = [] of Alteration
+    # property shares = [] of Share
+    # property votes = [] of Vote
 
     # property attachments = {} of AttachmentType => Attachment
 
@@ -104,28 +106,28 @@ module Edraj
     def attachments(query)
     end
 
-    def append_attachment(attachment : Media | Reply | Reaction | Share | Relationship | Signature | SuggestedModification | Vote)
-      case attachment
-      when Media
-        @media << attachment
-      when Reply
-        @replies << attachment
-      when Reaction
-        @reactions << attachment
-      when Share
-        @shares << attachment
-      when Relatiohship
-        @relationships << attachment
-      when Signatures
-        @signatures << signature
-      when SuggestedModification
-        @suggested_modifications << attachment
-      when Votes
-        @votes << attachment
-      else
-        raise "Unsupported attachment type #{attachment.class}"
-      end
-    end
+    #def append_attachment(attachment : Media | Reply | Reaction | Share | Relationship | Signature | Alteration | Vote)
+    #  case attachment
+    #  when Media
+    #    @media << attachment
+    #  when Reply
+    #    @replies << attachment
+    #  when Reaction
+    #    @reactions << attachment
+    #  when Share
+    #    @shares << attachment
+    #  when Relatiohship
+    #    @relationships << attachment
+    #  when Signatures
+    #    @signatures << signature
+    #  when SuggestedModification
+    #    @suggested_modifications << attachment
+    #  when Votes
+    #    @votes << attachment
+    #  else
+    #    raise "Unsupported attachment type #{attachment.class}"
+    #  end
+    #end
 
     def update_attachment(media)
     end
