@@ -223,20 +223,20 @@ module Edraj
           filename = record.properties.delete("filename")
           raise "File name is not provided with meda resource" if filename.nil?
           media = Media.new actor, parent.space, locator.subpath, filename.as_s
-          meta_file.media << media
+          media.save locator
         when ResourceType::Reply
           body = record.properties.delete("body")
           raise "Body is not provided in reply" if body.nil?
           reply = Reply.new actor, body
-          meta_file.replies << reply
+          reply.save locator
         when ResourceType::Reaction
           reaction_type = record.properties.delete("reaction_type")
           raise "ReactionType is not provided in reaction" if reaction_type.nil?
           reaction = Reaction.new actor, ReactionType.parse reaction_type.as_s
-          meta_file.reactions << reaction
+          reaction.save locator
         when ResourceType::Share
           share = Share.new actor, locator # fix me
-          meta_file.shares << share
+          share.save locator
         else
           raise "Unrecognized resource type #{record.resource_type}"
           # meta_file = Content.new actor

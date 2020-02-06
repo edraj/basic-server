@@ -57,7 +57,8 @@ module Edraj
     # property shares = [] of Share
     # property votes = [] of Vote
 
-    # property attachments = {} of AttachmentType => Attachment
+    # property attachments = {} of AttachmentType => Attachment # This is presented in the filesystem directly
+
 
     def json_body : JSON::Any
       return @body if @location.starts_with? "embedded"
