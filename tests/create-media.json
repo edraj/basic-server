@@ -6,9 +6,12 @@
 	"scope": "base",
 	"records": [
 		{ 
-			"resource_type": "media",
-			"uuid": "7013f18c-aec6-4347-afc1-a0fdb521cbae",
-			"subpath": "/cool/stuff/",
+			"resource_type": "Media",
+			"parent": {
+				"id": "7013f18c-aec6-4347-afc1-a0fdb521cbae",
+				"subpath": "/cool/stuff/",
+				"resource_type": ""
+			},
 			"timestamp": "2019-12-19T00:53:36.516916000Z",
 			"properties":{
 				"bytesize": 3022,

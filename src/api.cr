@@ -11,9 +11,13 @@ require "./service-models"
 require "./entry"
 require "file_utils"
 
-#  logger.debug "#{settings.host}:#{settings.port}".colorize.yellow
-
 include Edraj
+
+module Edraj
+
+#  logger.debug "#{settings.host}:#{settings.port}".colorize.yellow
+Log.debug { "Settings #{settings.host}:#{settings.port}" }
+
 static_headers do |response, filepath, filestat|
   if filepath =~ /\.html$/
     response.headers.add("Access-Control-Allow-Origin", "*")
@@ -48,7 +52,7 @@ def process_request(request : Request) : Response
       request.records.each do |record|
         begin
           locator = Locator.new space, record.subpath, record.resource_type, record.id.to_s
-          resource_category = record.resource_type.category
+					resource_category = locator.resource_type.category
 
           case resource_category
           when ResourceCategory::Content
@@ -65,6 +69,8 @@ def process_request(request : Request) : Response
             raise "Unsupported resource type #{record.resource_type} category #{resource_category}"
           end
         rescue ex
+					puts "Error: #{ex.to_s}"
+					puts ex.backtrace?.to_pretty_json2
           response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
         ensure
           # TBD build notification object and trigger to respective redis and sockets
@@ -79,6 +85,7 @@ def process_request(request : Request) : Response
       records, result = Entry.query space, query
       response.records = records
       response.results << result
+    when RequestType::Send
     when RequestType::Login
       actor = request.actor
       raise "Actor UUID is missing" if actor.nil?
@@ -91,6 +98,8 @@ def process_request(request : Request) : Response
       # when RequestType::Logout
     end
   rescue ex
+		puts "Error: #{ex.to_s}"
+		puts ex.backtrace?.to_pretty_json2
     response.results << Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any
   ensure
     duration = Time.monotonic - start
@@ -110,6 +119,8 @@ post "/api/" do |ctx|
     request = Request.from_json ctx.request.body.not_nil!
     process_request(request).to_pretty_json2
   rescue ex
+		puts "Error: #{ex.to_s}"
+		puts ex.backtrace?.to_pretty_json2
     {records: [] of String, results: [Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s), "backtrace" => JSON::Any.new(ex.backtrace?.to_s)} of String => JSON::Any]}.to_pretty_json2
   end
 end
@@ -146,6 +157,8 @@ post "/media/*subpath" do |ctx|
         end
         # raw_filename = part.filename if part.filename.is_a?(String)
         # raw_filesize = part.size unless part.size.nil?
+      else
+        # TBD
       end
     end
     # pp raw_filename.path
@@ -167,7 +180,8 @@ post "/media/*subpath" do |ctx|
 
     process_request(request).to_pretty_json2
   rescue ex
-    pp ex
+		puts "Error: #{ex.to_s}"
+		puts ex.backtrace?.to_pretty_json2
     {records: [] of String, results: [Result.new ResultType::Failure, {"message" => JSON::Any.new(ex.to_s)} of String => JSON::Any]}.to_pretty_json2
   end
 end
@@ -198,3 +212,5 @@ ws "/websocket" do |socket, context|
 end
 
 Kemal.run
+
+end

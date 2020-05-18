@@ -13,6 +13,7 @@ module Edraj
     View
     AuthItem
     Logic
+		Unknown
   end
 
   # This is simply a compilation of all "terminal" child classes of Resource class.
@@ -36,14 +37,15 @@ module Edraj
     Accomplishment  # Attachment
     MessageDelivery # Attachment
     Vote            # Attachment
-    Relationship    # Attachment 
+    Relationship    # Attachment
     Subscription    # Resource
-		Identity        # Resource
+    Identity        # Resource
     Invitation      # Resource
     Notification    # Resource
     Address         # Resource
     User            # Actor
-    Group           # actor
+		Bot             # Actor
+    Group           # Actor
     Page            # View
     Block           # View
     Library         # Logic
@@ -51,9 +53,10 @@ module Edraj
     Locator         # Resource
     Permission      # AuthItem
     Role            # AuthItem
+    Undefined       # Uknown
 
     def category
-      case value
+			case self
       when Accomplishment, Media, MessageDelivery, Organization, Reaction, Relationship, Reply, Share, Signature, Alteration, Vote
         ResourceCategory::Attachment
       when Permission, Role
@@ -68,6 +71,8 @@ module Edraj
         ResourceCategory::Logic
       when Block, Page
         ResourceCategory::View
+			when Undefined
+				ResourceCategory::Unknown
       else
         raise "Uncategoried resource"
       end
@@ -85,10 +90,9 @@ module Edraj
     def to_s(io)
       io << to_pretty_json()
     end
-		
 
-		def save(locator : Locator)
-		end
+    def save(locator : Locator)
+    end
   end
 
   # محدد

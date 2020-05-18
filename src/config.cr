@@ -1,4 +1,4 @@
-require "logger"
+require "log"
 require "option_parser"
 require "colorize"
 require "yaml"
@@ -6,6 +6,8 @@ require "yaml"
 # * **converter**: specify an alternate type for parsing and generation. The converter must define `from_yaml(YAML::PullParser)` and `to_yaml(value, YAML::Builder)` as class methods.
 # def self.from_yaml(ctx : YAML::ParseContext, node : YAML::Nodes::Node) : Time
 # def self.to_yaml(value : Time, yaml : YAML::Nodes::Builder)
+
+Log.setup_from_env
 
 module Path::StringConverter
   def self.from_yaml(ctx, node) : Path
@@ -21,12 +23,12 @@ module Path::StringConverter
 end
 
 module Edraj
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.level = Logger::DEBUG
+  #  LOGGER = Logger.new(STDOUT)
+  #  LOGGER.level = Logger::DEBUG
 
-  def self.logger
-    LOGGER
-  end
+  #  def self.logger
+  #    LOGGER
+  #  end
 
   class Config
     include YAML::Serializable

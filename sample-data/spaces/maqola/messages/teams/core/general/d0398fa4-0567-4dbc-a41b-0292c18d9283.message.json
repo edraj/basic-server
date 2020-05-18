@@ -3,8 +3,8 @@
 	"title":"business meeting",
 	"body":"Hello back",
   "owner": {
-    "uuid": "7617c4ca-1ab9-4883-92d2-e2c81664c64d",
-    "resource_type": "Actor",
+    "id": "7617c4ca-1ab9-4883-92d2-e2c81664c64d",
+    "resource_type": "User",
     "space": "maqola",
     "subpath": "members/core"
   },

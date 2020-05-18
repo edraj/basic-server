@@ -59,7 +59,6 @@ module Edraj
 
     # property attachments = {} of AttachmentType => Attachment # This is presented in the filesystem directly
 
-
     def json_body : JSON::Any
       return @body if @location.starts_with? "embedded"
       return ::JSON.parse File.read @location.lchop "file://" if @location.starts_with? "file://"
@@ -107,7 +106,7 @@ module Edraj
     def attachments(query)
     end
 
-    #def append_attachment(attachment : Media | Reply | Reaction | Share | Relationship | Signature | Alteration | Vote)
+    # def append_attachment(attachment : Media | Reply | Reaction | Share | Relationship | Signature | Alteration | Vote)
     #  case attachment
     #  when Media
     #    @media << attachment
@@ -128,7 +127,7 @@ module Edraj
     #  else
     #    raise "Unsupported attachment type #{attachment.class}"
     #  end
-    #end
+    # end
 
     def update_attachment(media)
     end

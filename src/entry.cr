@@ -117,8 +117,8 @@ module Edraj
 
     # Move
     def self.move(old_locator : Locator, new_locator : Locator)
-			old_path = Path.new
-			new_path = Path.new
+      old_path = Path.new
+      new_path = Path.new
       File.move old_path, new_path
     end
 

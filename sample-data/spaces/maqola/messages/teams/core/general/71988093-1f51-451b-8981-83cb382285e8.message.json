@@ -5,8 +5,8 @@
   "payload": "It has been sometime\nHow are you doing?\nregards",
   "content_type": "none",
   "owner": {
-    "uuid": "ddf98cad-1db2-4acc-8bbc-358c25d40c37",
-    "resource_type": "Actor",
+    "id": "ddf98cad-1db2-4acc-8bbc-358c25d40c37",
+    "resource_type": "User",
     "space": "maqola",
     "subpath": "members/core"
   },
