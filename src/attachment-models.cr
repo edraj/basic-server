@@ -36,13 +36,16 @@ module Edraj
     def initialize(@actor)
     end
 
-    def self.query(parent : Locator, filter)
+    def query(parent : Locator, filter)
       attachments = {} of AttachmentType => Attachment
 
       {attachments, Result.new(ResultType::Success, {"returned" => JSON::Any.new(attachments.size.to_i64), "total" => JSON::Any.new(attachments.size.to_i64)} of String => JSON::Any)}
     end
 
-    def self.save(parent : Locator)
+    def save(parent : Locator)
+    end
+
+    def process_request
     end
   end
 

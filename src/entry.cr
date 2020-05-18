@@ -301,4 +301,24 @@ module Edraj
       {records, Result.new ResultType::Success, {"returned" => JSON::Any.new(records.size.to_i64), "total" => JSON::Any.new(records.size.to_i64)} of String => JSON::Any}
     end
   end
+
+  class SubEntry
+    property locator : Locator
+    property attachment : Attachment
+
+    # Load existing @attachment from @locator
+    def initialize(@locator)
+      case @locator.resource_type
+      when ResourceType::Media
+        @attachment = Media.from_json @locator.path, @locator.json_name
+      when ResourceType::Reply
+        @attachment = Reply.from_json @locator.path, @locator.json_name
+      when ResourceType::Reaction
+        @attachment = Reaction.from_json @locator.path, @locator.json_name
+      else
+        raise "Unsupported resource type #{@locator.resource_type}"
+        # @meta_file = Content.from_json @locator.path, @locator.json_name
+      end
+		end
+  end
 end

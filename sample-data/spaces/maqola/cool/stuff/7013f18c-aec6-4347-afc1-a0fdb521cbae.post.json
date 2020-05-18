@@ -1,0 +1,16 @@
+{
+  "timestamp": "2019-12-19T00:53:36Z",
+  "tags": [
+    "fun",
+    "personal"
+  ],
+  "location": "none",
+  "body": null,
+  "content_type": "none",
+  "owner": {
+    "id": "kefah",
+    "resource_type": "User",
+    "space": "something",
+    "subpath": "users"
+  }
+}

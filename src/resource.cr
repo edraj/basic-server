@@ -26,6 +26,7 @@ module Edraj
     Message         # Content
     StructuredJson  # Content
     Publication     # Content
+		Contract        # Content # aka Order / Agreement / Letter / Memorandom ... involving multiple parties and terms
     Contact         # Biography
     Media           # Attachment
     Reply           # Attachment aka comment
@@ -38,6 +39,8 @@ module Edraj
     MessageDelivery # Attachment
     Vote            # Attachment
     Relationship    # Attachment
+		Invoice         # Attachment
+		Reciept         # Attachment
     Subscription    # Resource
     Identity        # Resource
     Invitation      # Resource
@@ -101,7 +104,7 @@ module Edraj
     property resource_type : ResourceType
     property space : String
     property subpath : String
-    property parent_id : ID?  # This is required for Attachments only
+    property parent_id : ID?  # This is required for Attachments (SubEntry) only
     property anchor : String? # A pointer to a sub-content in the resource
     property host : String?
     property uri : String? # Remote reference of the resource
@@ -109,8 +112,16 @@ module Edraj
     def initialize(@space, @subpath, @resource_type, @id)
     end
 
-    def json_name
-      "#{@id.to_s}.#{@resource_type.to_s.downcase}.json"
+    def json_name : String
+			category = resource_type.category
+			case category
+			when ResourceCategory::Content
+				"#{@id.to_s}.#{@resource_type.to_s.downcase}.json"
+			when ResourceCategory::Attachment
+				".#{@parent_id.to_s}/#{@id.to_s}.#{@resource_type.to_s.downcase}.json"
+			else
+				raise "json_name for requested resource type category (#{category}) does not exist"
+			end
     end
 
     def path # Absolute local path

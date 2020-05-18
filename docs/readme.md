@@ -10,6 +10,13 @@ View: Made of blocks that use code to invoke other content and render them accor
 Logic: Reusable logic that deals with content
 
 
+Primary Entry
+
+Subentry
+ - Attachment
+ - Resrouce
+
+
 ### To generate a detailed structure 
 
 ```bash

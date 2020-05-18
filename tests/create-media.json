@@ -7,10 +7,11 @@
 	"records": [
 		{ 
 			"resource_type": "Media",
+			"subpath": "",
 			"parent": {
 				"id": "7013f18c-aec6-4347-afc1-a0fdb521cbae",
 				"subpath": "/cool/stuff/",
-				"resource_type": ""
+				"resource_type": "Post"
 			},
 			"timestamp": "2019-12-19T00:53:36.516916000Z",
 			"properties":{

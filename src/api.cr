@@ -149,7 +149,9 @@ post "/media/*subpath" do |ctx|
     HTTP::FormData.parse(ctx.request) do |part|
       case part.name
       when "request"
-        request = Request.from_json part.body.gets_to_end
+				raw_request = part.body.gets_to_end
+				# puts "REQUEST: #{raw_request}"
+        request = Request.from_json raw_request
       when "file"
         # raise "No file name" unless part.filename.is_a?(String)
         temp_file = File.tempfile do |file|
